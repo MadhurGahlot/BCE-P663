@@ -2,7 +2,16 @@ from fastapi import FastAPI
 from app.routes import auth
 from app.database import engine, Base
 
-app = FastAPI(title="BCE-P663 Assignment Similarity System")
+app = FastAPI(
+    title="BCE-P663 Assignment Similarity System",
+    description="API for detecting plagiarism between assignments.",
+    version="1.0.0",
+    contact={
+        "name": "DEVELOPER",
+        "email": "236301126@gkv.ac.in",
+        #"email" : "236301140@gkv.ac.in"
+    },
+    )
 
 # ✅ create tables ONCE at startups
 Base.metadata.create_all(bind=engine)
