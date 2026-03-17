@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from app.routes import auth
 from app.database import engine, Base
+from app.models import  assignments
+from app.models import user
+from app.routes import assignments
 
 app = FastAPI(
     title="BCE-P663 Assignment Similarity System",
@@ -25,5 +28,6 @@ def root():
         " stauts ": "OK",
         " Date ": " 21-01-2026"   
             }
-    
+
+app.include_router(assignments.router)    
 
