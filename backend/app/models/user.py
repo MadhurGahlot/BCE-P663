@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Enum
 from app.database import Base
 import enum
+from sqlalchemy.orm import relationship
 
 class RoleEnum(str, enum.Enum):
     teacher = "teacher"
@@ -21,3 +22,4 @@ class User(Base):
     password = Column(String)
     role = Column(Enum(RoleEnum))
     department = Column(Enum(DepartmentEnum))
+    submissions = relationship("Submission", back_populates="student")
