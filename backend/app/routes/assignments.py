@@ -8,6 +8,7 @@ from app.utils.dependies import get_current_teacher
 router = APIRouter(prefix="/assignments", tags=["Assignments"])
 
 
+# 🔌 Database Dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -29,7 +30,7 @@ def create_assignment(
         department=assignment.department,
         deadline=assignment.deadline,
         total_marks=assignment.total_marks,
-        created_by=current_user["sub"]  # email stored in token
+        created_by=current_user["user_id"]   # ✅ FIXED (IMPORTANT)
     )
 
     db.add(new_assignment)

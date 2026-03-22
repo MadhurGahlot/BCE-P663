@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
 
@@ -15,3 +16,5 @@ class Assignment(Base):
 
     created_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    submissions = relationship("Submission", back_populates="assignment")

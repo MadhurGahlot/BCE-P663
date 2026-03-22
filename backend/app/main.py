@@ -1,9 +1,16 @@
 from fastapi import FastAPI
-from app.routes import auth
 from app.database import engine, Base
-from app.models import  assignments
-from app.models import user
+
+# ✅ IMPORT ALL MODELS (VERY IMPORTANT)
+from app.models.user import User
+from app.models.assignments import Assignment
+from app.models.submission import Submission
+
+# ✅ IMPORT ROUTES
+from app.routes import auth
 from app.routes import assignments
+from app.routes import submission
+
 
 app = FastAPI(
     title="BCE-P663 Assignment Similarity System",
@@ -12,22 +19,26 @@ app = FastAPI(
     contact={
         "name": "DEVELOPER",
         "email": "236301126@gkv.ac.in",
-        #"email" : "236301140@gkv.ac.in"
     },
-    )
+)
 
-# ✅ create tables ONCE at startups
-Base.metadata.create_all(bind=engine)
 
+# ✅ CREATE TABLES ON STARTUP (BEST PRACTICE)
+@app.on_event("startup")
+def startup():
+    Base.metadata.create_all(bind=engine)
+
+
+# ✅ INCLUDE ROUTES
 app.include_router(auth.router)
+app.include_router(assignments.router)
+app.include_router(submission.router)
+
 
 @app.get("/")
 def root():
     return {
-        "message" : "BCE-P663 Backend Running",
-        " stauts ": "OK",
-        " Date ": " 21-01-2026"   
-            }
-
-app.include_router(assignments.router)    
-
+        "message": "BCE-P663 Backend Running",
+        "status": "OK",
+        "date": "21-01-2026"
+    }
