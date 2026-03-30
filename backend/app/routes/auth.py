@@ -1,17 +1,17 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from jose import jwt, JWTError
-from fastapi.security import OAuth2PasswordBearer
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.user_schemas import UserRegister, UserLogin, Token
+from app.schemas.user_schemas import UserRegister, Token
 from app.utils.security import hash_password, verify_password
 from app.utils.jwt import create_access_token
 
+# 🔥 Load ENV
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -19,13 +19,17 @@ ALGORITHM = "HS256"
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
+# 🔐 OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
+# =========================
+# ✅ REGISTER USER
+# =========================
 @router.post("/register")
 def register_user(user: UserRegister, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user.email).first()
-    
+
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -44,24 +48,9 @@ def register_user(user: UserRegister, db: Session = Depends(get_db)):
     return {"message": "User registered successfully"}
 
 
-""" @router.post("/login", response_model=Token)
-def login_user(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
-
-    if not db_user or not verify_password(user.password, db_user.password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    access_token = create_access_token({
-        "user_id": db_user.id,
-        "sub": db_user.email,
-        "role": db_user.role
-    })
-
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
-    } """
-
+# =========================
+# ✅ LOGIN USER (JWT)
+# =========================
 @router.post("/login", response_model=Token)
 def login_user(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -73,7 +62,7 @@ def login_user(
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     access_token = create_access_token({
-        "user_id": db_user.id,
+        "user_id": db_user.id,   # 🔥 IMPORTANT
         "sub": db_user.email,
         "role": db_user.role
     })
@@ -84,9 +73,19 @@ def login_user(
     }
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+# =========================
+# ✅ GET CURRENT USER
+# =========================
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        # 🔍 DEBUG (remove later)
+        print("TOKEN PAYLOAD:", payload)
+
         user_id = payload.get("user_id")
 
         if user_id is None:
@@ -101,12 +100,20 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
+
+
+# =========================
+# ✅ STUDENT ONLY
+# =========================
 def get_current_student(current_user: User = Depends(get_current_user)):
     if current_user.role != "student":
         raise HTTPException(status_code=403, detail="Only students allowed")
     return current_user
 
 
+# =========================
+# ✅ TEACHER ONLY
+# =========================
 def get_current_teacher(current_user: User = Depends(get_current_user)):
     if current_user.role != "teacher":
         raise HTTPException(status_code=403, detail="Only teachers allowed")

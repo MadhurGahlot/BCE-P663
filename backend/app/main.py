@@ -1,15 +1,19 @@
 from fastapi import FastAPI
+from app.routes import similarity
 from app.database import engine, Base
+
 
 # ✅ IMPORT ALL MODELS (VERY IMPORTANT)
 from app.models.user import User
 from app.models.assignments import Assignment
 from app.models.submission import Submission
+from app.models import grading
 
 # ✅ IMPORT ROUTES
 from app.routes import auth
 from app.routes import assignments
 from app.routes import submission
+from app.routes import grading
 
 
 app = FastAPI(
@@ -33,6 +37,8 @@ def startup():
 app.include_router(auth.router)
 app.include_router(assignments.router)
 app.include_router(submission.router)
+app.include_router(similarity.router)
+app.include_router(grading.router)
 
 
 @app.get("/")
