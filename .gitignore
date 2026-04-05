@@ -10,3 +10,47 @@ backend/node_modules/
 
 .env
 dist/
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+Thumbs.db
+
+# Python
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual environments (extra safety)
+env/
+ENV/
+
+# React / Frontend
+build/
+coverage/
+
+# Cache folders
+.cache/
+.parcel-cache/
+
+# Next.js / Vite (if you ever use them)
+.next/
+.out/
+
+# TypeScript
+*.tsbuildinfo
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDEs (optional additions)
+.idea/
+
+# Lock files (ONLY ignore if you intentionally want)
+# package-lock.json
+# yarn.lock
