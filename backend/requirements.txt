@@ -8,3 +8,15 @@ python-multipart
 pydantic
 python-dotenv
 jose
+transformers
+torch
+sentence-transformers
+pdf2image
+pillow
+opencv-python
+pdfplumber
+pdf2image
+pillow
+transformers
+torch
+sentence-transformers

@@ -1,64 +1,81 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends
 from sqlalchemy.orm import Session
+import shutil
+import os
 
 from app.database import get_db
 from app.models.submission import Submission
-from app.models.user import User
+from app.models.similarity import Similarity
+from app.services.ocr_service import process_pdf_with_sarvam
+from app.services.similarity_service import calculate_similarity
 
-from app.utils.filehandler import save_file
-from app.utils.contentextractor import extract_content
-from fastapi import status
-from sqlalchemy.orm import Session
-from jose import jwt, JWTError
+router = APIRouter()
 
-from app.database import get_db
-from app.models.user import User
-
-from app.routes.auth import get_current_student, get_current_teacher
-router = APIRouter(prefix="/submission", tags=["Submission"])
+UPLOAD_DIR = "backend/uploads/submissions"
 
 
-# ✅ Submit Assignment
-@router.post("/submit/{assignment_id}")
-def submit_assignment(
+@router.post("/submit")
+def upload_submission(
     assignment_id: int,
+    student_id: int,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_student)
+    db: Session = Depends(get_db)
 ):
-    # Save file
-    file_path = save_file(file, current_user.id)
+    # 🔹 Save file
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    file_path = os.path.join(UPLOAD_DIR, file.filename)
 
-    # Extract content
-    content = extract_content(file_path)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
 
-    if content == "":
-        raise HTTPException(status_code=400, detail="Empty or unsupported file")
+    # 🔹 OCR processing
+    print("🔍 Running OCR...")
+    ocr_text = process_pdf_with_sarvam(file_path)
 
-    # Save in DB
-    submission = Submission(
+    # 🔹 Save submission
+    new_submission = Submission(
         assignment_id=assignment_id,
-        student_id=current_user.id,
+        student_id=student_id,
         file_path=file_path,
-        content=content
+        ocr_text=ocr_text
     )
 
-    db.add(submission)
+    db.add(new_submission)
     db.commit()
-    db.refresh(submission)
+    db.refresh(new_submission)
 
-    return {"message": "Submission successful"}
-
-
-# ✅ Get all submissions (Teacher only)
-@router.get("/assignment/{assignment_id}")
-def get_submissions(
-    assignment_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_teacher)
-):
+    # 🔥 Compare with existing submissions
     submissions = db.query(Submission).filter(
-        Submission.assignment_id == assignment_id
+        Submission.assignment_id == assignment_id,
+        Submission.id != new_submission.id
     ).all()
 
-    return submissions
+    results = []
+
+    for sub in submissions:
+        if not sub.ocr_text:
+            continue
+
+        score = calculate_similarity(new_submission.ocr_text, sub.ocr_text)
+
+        similarity = Similarity(
+            submission1_id=new_submission.id,
+            submission2_id=sub.id,
+            similarity=score
+        )
+
+        db.add(similarity)
+        results.append({
+            "compared_with": sub.id,
+            "score": score
+        })
+
+    db.commit()
+
+    return {
+        "message": "Submission uploaded successfully",
+        "submission_id": new_submission.id,
+        "similarities": results
+    }
+
+

@@ -20,3 +20,5 @@ class Submission(Base):
     # ✅ RELATIONS
     assignment = relationship("Assignment", back_populates="submissions")
     student = relationship("User", back_populates="submissions")
+
+    ocr_text = Column(Text, nullable=True)

@@ -295,4 +295,4 @@ REVOKE ALL PRIVILEGES ON DATABASE db_name FROM user1;
 
 # 🚀 FINAL TIP
 
-> 💡 Practice these commands daily in `psql` for mastery.
+> 💡 Practice these commands daily in `psql` for fmastery.
