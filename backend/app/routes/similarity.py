@@ -5,9 +5,7 @@ from app.database import get_db
 from app.models.submission import Submission
 from app.routes.auth import get_current_teacher
 from app.models.grading import GradingRule
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from app.services.similarity_service import calculate_similarity
 
 router = APIRouter(prefix="/similarity", tags=["Similarity"])
 
@@ -29,34 +27,33 @@ def compare_submissions(
     if len(submissions) < 2:
         return {"message": "Not enough submissions to compare"}
 
-    texts = [s.content for s in submissions]
-
-    vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform(texts)
-
-    similarity_matrix = cosine_similarity(tfidf_matrix)
-
     results = []
 
-    def calculate_marks(sim):
+    def calculate_marks(sim_percent):
         if not rule:
             return 0
 
-        if sim < rule.low:
+        if sim_percent < rule.low:
             return rule.marks_low
-        elif sim < rule.high:
+        elif sim_percent < rule.high:
             return rule.marks_medium
         else:
             return rule.marks_high
 
     for i in range(len(submissions)):
         for j in range(i + 1, len(submissions)):
-            sim_score = round(similarity_matrix[i][j] * 100, 2)
+            # 🔹 Prefer ocr_text, fallback to content
+            text1 = submissions[i].ocr_text or submissions[i].content or ""
+            text2 = submissions[j].ocr_text or submissions[j].content or ""
+            
+            sim_score = calculate_similarity(text1, text2)
+            sim_percent = round(sim_score * 100, 2)
+            
             results.append({
                 "studentid1": submissions[i].student_id,
                 "studentid2": submissions[j].student_id,
-                "similarityscore": sim_score,
-                "marks": calculate_marks(sim_score)
+                "similarityscore": sim_percent,
+                "marks": calculate_marks(sim_percent)
             })
 
     return results

@@ -7,7 +7,7 @@ from app.database import engine, Base
 from app.models.user import User
 from app.models.assignments import Assignment
 from app.models.submission import Submission
-from app.models import grading
+from app.models.grading import GradingRule
 
 # ✅ IMPORT ROUTES
 from app.routes import auth
@@ -21,9 +21,10 @@ app = FastAPI(
     description="API for detecting plagiarism between assignments.",
     version="1.0.0",
     contact={
-        "name": "DEVELOPER",
+        "name": " BACKEND DEVELOPER",
         "email": "236301126@gkv.ac.in",
     },
+    
 )
 
 
@@ -46,5 +47,11 @@ def root():
     return {
         "message": "BCE-P663 Backend Running",
         "status": "OK",
-        "date": "21-01-2026"
+        "date": "21-01-2026",
+        "contact" : "236301126@gkv.ac.in"
     }
+
+@app.get("/add/{val}")
+def items(val: int , q : str | None = None):
+    return {"NOofitmeadded": val , "q ": q}
+

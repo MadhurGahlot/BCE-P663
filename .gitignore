@@ -1,15 +1,35 @@
+# Environment variables
 .env
-venv/
+*.env
+
+# Python
 __pycache__/
 *.pyc
-.DS_Store
-.vscode/
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Node / Frontend
 node_modules/
 frontend/node_modules/
 backend/node_modules/
 
-.env
+# Build outputs
 dist/
+build/
+.out/
+.next/
+coverage/
+
+# Cache
+.cache/
+.parcel-cache/
+
 # Logs
 *.log
 logs/
@@ -18,28 +38,12 @@ yarn-debug.log*
 yarn-error.log*
 
 # OS files
+.DS_Store
 Thumbs.db
 
-# Python
-*.pyo
-*.pyd
-*.sqlite3
-
-# Virtual environments (extra safety)
-env/
-ENV/
-
-# React / Frontend
-build/
-coverage/
-
-# Cache folders
-.cache/
-.parcel-cache/
-
-# Next.js / Vite (if you ever use them)
-.next/
-.out/
+# IDEs
+.vscode/
+.idea/
 
 # TypeScript
 *.tsbuildinfo
@@ -48,9 +52,12 @@ coverage/
 *.tmp
 *.temp
 
-# IDEs (optional additions)
-.idea/
-
-# Lock files (ONLY ignore if you intentionally want)
-# package-lock.json
-# yarn.lock
+# Project-specific
+backend/uploads/
+backend/testing/output.zip
+backend/testing/output_extracted/
+backend/testing/temp_*.pdf
+.pdf
+*.pdf
+.zip
+*.zip
