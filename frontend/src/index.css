@@ -1,47 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-
 :root {
-  --bg-dark: #0f172a;
-  --bg-card: #1e293b;
-  --primary: #4f46e5;
-  --primary-glow: rgba(79, 70, 229, 0.4);
-  --gkv-maroon: #800000;
-  --gkv-gold: #ffd700;
+  --bg-dark: #020617;
+  --bg-card: #0f172a;
+  --primary: #f97316;
+  --primary-glow: rgba(249, 115, 22, 0.4);
+  --gkv-orange: #f97316;
+  --gkv-gold: #f59e0b;
 }
 
 body {
   margin: 0;
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-dark);
-  color: #f8fafc;
+  color: #f1f5f9;
   -webkit-font-smoothing: antialiased;
 }
 
 .glass-morphism {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .gradebook-gradient {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #f97316 0%, #f59e0b 100%);
 }
 
 .gkv-gradient {
-  background: linear-gradient(135deg, #800000 0%, #b30000 100%);
+  background: linear-gradient(135deg, #ea580c 0%, #d97706 100%);
 }
 
 .text-glow {
-  text-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
+  text-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
 }
 
 .neon-border {
-  box-shadow: 0 0 15px var(--primary-glow);
+  box-shadow: 0 0 20px var(--primary-glow);
 }
 
 /* Custom scrollbar */
@@ -50,14 +50,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #020617;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1e293b;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #334155;
 }

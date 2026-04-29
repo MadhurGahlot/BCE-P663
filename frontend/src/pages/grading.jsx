@@ -28,96 +28,97 @@ const GradingRules = () => {
     return (
         <div className="max-w-4xl mx-auto space-y-10 pb-20">
             <header>
-                <div className="inline-flex items-center space-x-2 text-indigo-400 mb-2">
+                <div className="inline-flex items-center space-x-2 text-orange-400 mb-2.5">
                     <Scale className="w-4 h-4" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Policy Configuration</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Policy Configuration</span>
                 </div>
-                <h1 className="text-4xl font-black text-white tracking-tight">Grading Algorithms</h1>
-                <p className="text-slate-500 font-medium mt-1">Define how similarity indices translate to academic marks at Gurukul Kangri.</p>
+                <h1 className="text-4xl font-extrabold text-white tracking-tight">Grading Algorithms</h1>
+                <p className="text-slate-500 font-medium mt-1 text-sm leading-relaxed">Define how similarity indices translate to academic marks at Gurukul Kangri Centres.</p>
             </header>
 
-            <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 shadow-2xl overflow-hidden">
-                <div className="p-8 border-b border-slate-800 flex items-center justify-between bg-slate-800/30">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center">
-                            <Settings className="w-5 h-5 text-indigo-400" />
+            <div className="bg-slate-900/40 backdrop-blur-2xl rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden">
+                <div className="p-10 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                    <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center border border-orange-500/10 shadow-xl neon-border text-glow">
+                            <Settings className="w-6 h-6 text-orange-400" />
                         </div>
-                        <h3 className="text-lg font-bold text-white">Similarity-to-Grade Mapping</h3>
+                        <h3 className="text-xl font-bold text-white tracking-tight">Similarity-to-Grade Scalar</h3>
                     </div>
-                    <button className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95">
-                        <Plus className="w-4 h-4" />
-                        <span>Add New Scalar</span>
+                    <button className="flex items-center space-x-3 gradebook-gradient text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-95">
+                        <Plus className="w-4.5 h-4.5" />
+                        <span>Add Global Rule</span>
                     </button>
                 </div>
 
-                <div className="p-8 space-y-4">
+                <div className="p-10 space-y-6">
                     {rules.map((rule) => (
                         <motion.div
                             key={rule.id}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="group flex items-center gap-6 bg-slate-800/20 p-6 rounded-3xl border border-slate-800 hover:border-slate-700 hover:bg-slate-800/50 transition-all shadow-inner"
+                            whileHover={{ scale: 1.01 }}
+                            className="group flex items-center gap-8 bg-white/5 p-8 rounded-[2rem] border border-white/5 hover:border-orange-500/20 hover:bg-white/10 transition-all shadow-inner"
                         >
-                            <div className={`w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-xl font-black ${rule.color} shadow-2xl`}>
+                            <div className={`w-16 h-16 rounded-2xl bg-[#020617] border border-white/5 flex items-center justify-center text-2xl font-black ${rule.color} shadow-2xl`}>
                                 {rule.grade}
                             </div>
 
-                            <div className="flex-1 space-y-1">
-                                <p className="text-sm font-bold text-slate-200">{rule.name}</p>
-                                <div className="flex items-center space-x-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                    <span>Similarity Range:</span>
-                                    <span className="text-slate-300 font-bold">{rule.minSimilarity}% — {rule.maxSimilarity}%</span>
+                            <div className="flex-1 space-y-2">
+                                <p className="text-base font-extrabold text-slate-200 tracking-tight">{rule.name}</p>
+                                <div className="flex items-center space-x-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    <span className="opacity-50">Similarity Boundary:</span>
+                                    <span className="text-orange-400 font-bold bg-orange-500/5 px-2 py-0.5 rounded-lg border border-orange-500/10">{rule.minSimilarity}% — {rule.maxSimilarity}%</span>
                                 </div>
                             </div>
 
                             <div className="flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button className="p-3 bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50">
-                                    <Settings className="w-4 h-4" />
+                                <button className="p-3.5 bg-white/5 text-slate-500 hover:text-white rounded-xl transition-all border border-white/5">
+                                    <Settings className="w-5 h-5" />
                                 </button>
-                                <button className="p-3 bg-slate-800 text-rose-500/50 hover:text-rose-400 rounded-xl transition-all border border-slate-700/50">
-                                    <Trash2 className="w-4 h-4" />
+                                <button className="p-3.5 bg-white/5 text-rose-500/50 hover:text-rose-400 rounded-xl transition-all border border-white/5">
+                                    <Trash2 className="w-5 h-5" />
                                 </button>
                             </div>
                         </motion.div>
                     ))}
                 </div>
 
-                <div className="p-8 bg-slate-800/30 border-t border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center text-amber-400/60 text-[10px] font-black uppercase tracking-widest">
-                        <Info className="w-4 h-4 mr-2" />
-                        Changes affect all future ingestion cycles
+                <div className="p-10 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+                    <div className="flex items-center text-amber-500/60 text-[10px] font-black uppercase tracking-[0.2em]">
+                        <Info className="w-4.5 h-4.5 mr-3" />
+                        Latency: Global Sync Active
                     </div>
                     <button
                         onClick={handleSave}
-                        className="flex items-center space-x-3 gradebook-gradient px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-indigo-900/30 hover:scale-[1.02] active:scale-95 transition-all"
+                        className="flex items-center space-x-4 gradebook-gradient px-10 py-4.5 rounded-2xl text-xs font-black uppercase tracking-[0.25em] text-white shadow-2xl shadow-orange-500/30 hover:scale-[1.02] active:scale-95 transition-all"
                     >
                         <Save className="w-5 h-5" />
-                        <span>Apply Policy</span>
+                        <span>Update Policy Ledger</span>
                     </button>
                 </div>
             </div>
 
             {/* AI Assistant Hook */}
-            <div className="bg-indigo-600 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-indigo-900/40 relative overflow-hidden group">
-                <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-[100px] group-hover:scale-110 transition-transform"></div>
-                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
-                    <div className="max-w-lg">
-                        <div className="flex items-center space-x-3 mb-6">
-                            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10">
-                                <Zap className="w-6 h-6 fill-current text-white" />
+            <div className="bg-orange-600 rounded-[3rem] p-12 text-white shadow-2xl shadow-orange-900/40 relative overflow-hidden group">
+                <div className="absolute -top-32 -right-32 w-[600px] h-[600px] bg-white/10 rounded-full blur-[120px] group-hover:scale-110 transition-transform"></div>
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+                    <div className="max-w-xl">
+                        <div className="flex items-center space-x-4 mb-8">
+                            <div className="w-14 h-14 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/10 shadow-2xl">
+                                <Zap className="w-7 h-7 fill-current text-white" />
                             </div>
-                            <h3 className="text-2xl font-black tracking-tight">Auto-Ingestion Tuning</h3>
+                            <h3 className="text-2xl font-black tracking-tight italic">Forensic Tuning</h3>
                         </div>
-                        <p className="text-indigo-100 font-medium leading-relaxed mb-6">
-                            Want to auto-fail students with ChatGPT signatures? Enable <span className="font-serif italic text-white underline decoration-white/30">AI Semantic Detection</span> to override standard similarity thresholds.
+                        <p className="text-orange-50 font-medium leading-relaxed mb-8 text-sm opacity-90">
+                            Want to auto-fail students with ChatGPT signatures? Enable <span className="font-serif italic text-white underline decoration-white/30 underline-offset-8">AI Semantic Detection</span> to override standard similarity thresholds.
                         </p>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-[10px] font-black uppercase tracking-widest bg-white/15 px-4 py-2.5 rounded-xl border border-white/5">Detection Status: Active</span>
-                            <button className="text-[10px] font-black uppercase tracking-widest bg-white text-indigo-600 px-6 py-2.5 rounded-xl transition-all shadow-xl">Tune Model</button>
+                        <div className="flex items-center space-x-6">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] bg-white/15 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-sm">Status: Active</span>
+                            <button className="text-[10px] font-black uppercase tracking-[0.2em] bg-white text-orange-600 px-8 py-3 rounded-2xl transition-all shadow-2xl hover:scale-105 active:scale-95">Calibrate Model</button>
                         </div>
                     </div>
-                    <div className="w-40 h-40 border-4 border-white/20 rounded-[2.5rem] flex items-center justify-center rotate-12 group-hover:rotate-0 transition-transform shadow-2xl bg-white/5 backdrop-blur-md">
-                        <ShieldCheck className="w-20 h-20 text-white/40 group-hover:text-white transition-colors" />
+                    <div className="w-48 h-48 border-4 border-white/20 rounded-[3rem] flex items-center justify-center rotate-12 group-hover:rotate-0 transition-transform shadow-3xl bg-white/5 backdrop-blur-md shadow-orange-700/20">
+                        <ShieldCheck className="w-24 h-24 text-white/40 group-hover:text-white transition-colors" />
                     </div>
                 </div>
             </div>
