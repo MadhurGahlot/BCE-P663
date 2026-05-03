@@ -25,7 +25,7 @@ export default function SimilarityReport() {
   const submissions = getSubmissionsForAssignment(id ?? '');
   const simResult = getSimilarityResult(id ?? '');
 
-  if (!assignment) return <div className="p-6 text-slate-500">Assignment not found.</div>;
+  if (!assignment) return <div className="p-6 text-gray-500">Assignment not found.</div>;
 
   const getStudentName = (submissionId: string) => {
     const sub = submissions.find(s => s.id === submissionId);
@@ -81,14 +81,14 @@ export default function SimilarityReport() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 mt-1 flex-shrink-0">
+        <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 mt-1 flex-shrink-0">
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1">
-          <div className="text-xs text-slate-400 font-medium mb-1">{assignment.subject} • {assignment.title}</div>
-          <h1 className="text-xl font-bold text-slate-900">Similarity Report</h1>
+          <div className="text-xs text-gray-400 font-medium mb-1">{assignment.subject} • {assignment.title}</div>
+          <h1 className="text-xl font-bold text-gray-900">Similarity Report</h1>
           {simResult && (
-            <p className="text-slate-500 text-sm mt-0.5">Last computed: {new Date(simResult.computedAt).toLocaleString()}</p>
+            <p className="text-gray-500 text-sm mt-0.5">Last computed: {new Date(simResult.computedAt).toLocaleString()}</p>
           )}
         </div>
         <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
@@ -124,20 +124,20 @@ export default function SimilarityReport() {
               { label: 'Medium Risk (50-70%)', value: medRisk.length, color: 'text-orange-600', bg: 'bg-orange-50' },
               { label: 'Low Risk (<50%)', value: lowRisk.length, color: 'text-green-600', bg: 'bg-green-50' },
             ].map(({ label, value, color, bg }) => (
-              <div key={label} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm text-center">
+              <div key={label} className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm text-center">
                 <div className={`text-3xl font-bold ${color}`}>{value}</div>
-                <div className="text-xs text-slate-500 mt-1">{label}</div>
+                <div className="text-xs text-gray-500 mt-1">{label}</div>
               </div>
             ))}
           </div>
 
           {/* Tabs */}
-          <div className="flex bg-slate-100 rounded-xl p-1 w-fit gap-1">
+          <div className="flex bg-gray-100 rounded-xl p-1 w-fit gap-1">
             {(['overview', 'pairs', 'heatmap'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all capitalize ${tab === t ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all capitalize ${tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 {t === 'overview' ? 'Overview Chart' : t === 'pairs' ? 'Pair Analysis' : 'Similarity Heatmap'}
               </button>
@@ -147,8 +147,8 @@ export default function SimilarityReport() {
           {/* Tab: Overview */}
           {tab === 'overview' && (
             <div className="grid lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                <h2 className="font-semibold text-slate-800 mb-4">Max Similarity per Student</h2>
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                <h2 className="font-semibold text-gray-800 mb-4">Max Similarity per Student</h2>
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={studentMaxSim} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -164,15 +164,15 @@ export default function SimilarityReport() {
                 </ResponsiveContainer>
                 <div className="flex gap-3 mt-2 flex-wrap">
                   {[['#ef4444', '≥70% High'], ['#f97316', '50-70% Med'], ['#eab308', '30-50% Low-Med'], ['#22c55e', '<30% Low']].map(([c, l]) => (
-                    <div key={l} className="flex items-center gap-1 text-xs text-slate-500">
+                    <div key={l} className="flex items-center gap-1 text-xs text-gray-500">
                       <span className="w-3 h-3 rounded-sm inline-block" style={{ background: c }}></span>{l}
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                <h2 className="font-semibold text-slate-800 mb-4">Risk Distribution</h2>
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                <h2 className="font-semibold text-gray-800 mb-4">Risk Distribution</h2>
                 <div className="space-y-4 mt-6">
                   {[
                     { label: 'High Risk (≥70%)', count: highRisk.length, total: sortedPairs.length, color: 'bg-red-500' },
@@ -182,10 +182,10 @@ export default function SimilarityReport() {
                   ].map(({ label, count, total, color }) => (
                     <div key={label}>
                       <div className="flex justify-between text-xs mb-1.5">
-                        <span className="text-slate-600 font-medium">{label}</span>
-                        <span className="text-slate-500">{count} pair{count !== 1 ? 's' : ''}</span>
+                        <span className="text-gray-600 font-medium">{label}</span>
+                        <span className="text-gray-500">{count} pair{count !== 1 ? 's' : ''}</span>
                       </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div className={`h-full ${color} rounded-full transition-all`} style={{ width: total > 0 ? `${(count / total) * 100}%` : '0%' }} />
                       </div>
                     </div>
@@ -193,8 +193,8 @@ export default function SimilarityReport() {
                 </div>
 
                 {/* Thresholds Legend */}
-                <div className="mt-6 p-3 bg-slate-50 rounded-xl space-y-2">
-                  <div className="text-xs font-semibold text-slate-600 mb-2">Interpretation Guide</div>
+                <div className="mt-6 p-3 bg-gray-50 rounded-xl space-y-2">
+                  <div className="text-xs font-semibold text-gray-600 mb-2">Interpretation Guide</div>
                   {[
                     { range: '≥ 70%', label: 'High Risk', desc: 'Likely plagiarism — investigate immediately', color: 'text-red-600 bg-red-50' },
                     { range: '50–69%', label: 'Medium Risk', desc: 'Significant overlap — review carefully', color: 'text-orange-600 bg-orange-50' },
@@ -216,7 +216,7 @@ export default function SimilarityReport() {
           {tab === 'pairs' && (
             <div className="space-y-3">
               {sortedPairs.length === 0 && (
-                <div className="text-center py-10 text-slate-400">No pairs found.</div>
+                <div className="text-center py-10 text-gray-400">No pairs found.</div>
               )}
               {sortedPairs.map(pair => {
                 const pairKey = `${pair.submission1Id}-${pair.submission2Id}`;
@@ -227,40 +227,40 @@ export default function SimilarityReport() {
                 const sub2 = submissions.find(s => s.id === pair.submission2Id);
 
                 return (
-                  <div key={pairKey} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${pair.similarity >= 0.7 ? 'border-red-200' : pair.similarity >= 0.5 ? 'border-orange-200' : 'border-slate-200'}`}>
+                  <div key={pairKey} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${pair.similarity >= 0.7 ? 'border-red-200' : pair.similarity >= 0.5 ? 'border-orange-200' : 'border-gray-200'}`}>
                     <button
                       onClick={() => setExpandedPair(isExpanded ? null : pairKey)}
-                      className="w-full flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors"
+                      className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors"
                     >
                       <div className={`w-16 text-center py-2 rounded-xl text-sm font-bold border ${getSimilarityBg(pair.similarity)}`}>
                         {(pair.similarity * 100).toFixed(0)}%
                       </div>
                       <div className="flex-1 text-left">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-slate-800 text-sm">{s1Name}</span>
-                          <span className="text-slate-400 text-xs">↔</span>
-                          <span className="font-medium text-slate-800 text-sm">{s2Name}</span>
+                          <span className="font-medium text-gray-800 text-sm">{s1Name}</span>
+                          <span className="text-gray-400 text-xs">↔</span>
+                          <span className="font-medium text-gray-800 text-sm">{s2Name}</span>
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ml-1 ${getSimilarityBg(pair.similarity)}`}>{getSimilarityLabel(pair.similarity)}</span>
                         </div>
-                        <div className="text-xs text-slate-400 mt-0.5">
+                        <div className="text-xs text-gray-400 mt-0.5">
                           {pair.matchedSections.length} matched section{pair.matchedSections.length !== 1 ? 's' : ''} found
                         </div>
                       </div>
                       {pair.similarity >= 0.7 && <AlertTriangle size={16} className="text-red-500 flex-shrink-0" />}
                       {pair.similarity >= 0.5 && pair.similarity < 0.7 && <AlertTriangle size={16} className="text-orange-500 flex-shrink-0" />}
                       {pair.similarity < 0.5 && <CheckCircle size={16} className="text-green-500 flex-shrink-0" />}
-                      {isExpanded ? <ChevronUp size={16} className="text-slate-400 flex-shrink-0" /> : <ChevronDown size={16} className="text-slate-400 flex-shrink-0" />}
+                      {isExpanded ? <ChevronUp size={16} className="text-gray-400 flex-shrink-0" /> : <ChevronDown size={16} className="text-gray-400 flex-shrink-0" />}
                     </button>
 
                     {isExpanded && (
-                      <div className="border-t border-slate-100 p-5 space-y-4">
+                      <div className="border-t border-gray-100 p-5 space-y-4">
                         {/* Similarity bar */}
                         <div>
-                          <div className="flex justify-between text-xs text-slate-500 mb-1.5">
+                          <div className="flex justify-between text-xs text-gray-500 mb-1.5">
                             <span>Similarity Score</span>
                             <span className={`font-bold ${getSimilarityColor(pair.similarity)}`}>{(pair.similarity * 100).toFixed(1)}%</span>
                           </div>
-                          <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all ${pair.similarity >= 0.7 ? 'bg-red-500' : pair.similarity >= 0.5 ? 'bg-orange-500' : pair.similarity >= 0.3 ? 'bg-yellow-500' : 'bg-green-500'}`}
                               style={{ width: `${pair.similarity * 100}%` }}
@@ -271,20 +271,20 @@ export default function SimilarityReport() {
                         {/* Matched Sections */}
                         {pair.matchedSections.length > 0 && (
                           <div>
-                            <div className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                              <Eye size={15} className="text-slate-400" />
+                            <div className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                              <Eye size={15} className="text-gray-400" />
                               Matched / Copied Sections ({pair.matchedSections.length})
                             </div>
                             <div className="space-y-3">
                               {pair.matchedSections.map((section, i) => (
-                                <div key={i} className="rounded-xl overflow-hidden border border-slate-200">
-                                  <div className="px-3 py-1.5 bg-red-50 border-b border-slate-200 flex items-center gap-2">
+                                <div key={i} className="rounded-xl overflow-hidden border border-gray-200">
+                                  <div className="px-3 py-1.5 bg-red-50 border-b border-gray-200 flex items-center gap-2">
                                     <AlertTriangle size={12} className="text-red-500" />
                                     <span className="text-xs font-medium text-red-700">Match #{i + 1}</span>
                                   </div>
                                   <div className="p-3 bg-red-50/50">
-                                    <p className="text-xs text-slate-700 leading-relaxed font-mono">{section.text}</p>
-                                    <div className="flex gap-4 mt-2 text-xs text-slate-400">
+                                    <p className="text-xs text-gray-700 leading-relaxed font-mono">{section.text}</p>
+                                    <div className="flex gap-4 mt-2 text-xs text-gray-400">
                                       <span>In {s1Name}: position ~{section.startIn1}</span>
                                       <span>In {s2Name}: position ~{section.startIn2}</span>
                                     </div>
@@ -299,12 +299,12 @@ export default function SimilarityReport() {
                         {sub1 && sub2 && (
                           <div className="grid sm:grid-cols-2 gap-3">
                             {[{ sub: sub1, name: s1Name }, { sub: sub2, name: s2Name }].map(({ sub, name }) => (
-                              <div key={sub.id} className="rounded-xl border border-slate-200 overflow-hidden">
-                                <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-600">
+                              <div key={sub.id} className="rounded-xl border border-gray-200 overflow-hidden">
+                                <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 text-xs font-medium text-gray-600">
                                   {name} — {sub.fileName}
                                 </div>
                                 <div className="p-3 max-h-40 overflow-auto">
-                                  <pre className="text-xs text-slate-600 whitespace-pre-wrap font-mono leading-relaxed">
+                                  <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono leading-relaxed">
                                     {sub.content.slice(0, 500)}{sub.content.length > 500 ? '...' : ''}
                                   </pre>
                                 </div>
@@ -322,8 +322,8 @@ export default function SimilarityReport() {
 
           {/* Tab: Heatmap */}
           {tab === 'heatmap' && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <h2 className="font-semibold text-slate-800 mb-5">Similarity Heatmap</h2>
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <h2 className="font-semibold text-gray-800 mb-5">Similarity Heatmap</h2>
               <div className="overflow-auto">
                 <table className="border-collapse">
                   <thead>
@@ -331,7 +331,7 @@ export default function SimilarityReport() {
                       <th className="w-32 h-12"></th>
                       {heatmapStudents.map(s => (
                         <th key={s.id} className="w-24 h-12 text-center">
-                          <div className="text-xs font-medium text-slate-600 truncate max-w-[88px] -rotate-45 transform origin-left ml-4">{s.name}</div>
+                          <div className="text-xs font-medium text-gray-600 truncate max-w-[88px] -rotate-45 transform origin-left ml-4">{s.name}</div>
                         </th>
                       ))}
                     </tr>
@@ -339,10 +339,10 @@ export default function SimilarityReport() {
                   <tbody>
                     {heatmapStudents.map((row, ri) => (
                       <tr key={row.id}>
-                        <td className="w-32 pr-3 text-right text-xs font-medium text-slate-600 truncate max-w-[120px]">{row.name}</td>
+                        <td className="w-32 pr-3 text-right text-xs font-medium text-gray-600 truncate max-w-[120px]">{row.name}</td>
                         {heatmapStudents.map((col, ci) => {
                           if (ri === ci) {
-                            return <td key={col.id} className="w-24 h-10 bg-slate-200 border border-white" title="Same student" />;
+                            return <td key={col.id} className="w-24 h-10 bg-gray-200 border border-white" title="Same student" />;
                           }
                           const pairKey1 = simResult.pairs.find(p =>
                             (p.submission1Id === row.id && p.submission2Id === col.id) ||
@@ -367,7 +367,7 @@ export default function SimilarityReport() {
                   </tbody>
                 </table>
               </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
+              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
                 <div className="flex items-center gap-1">Color intensity indicates similarity level:</div>
                 {[['rgba(34,197,94,0.6)', 'Low'], ['rgba(234,179,8,0.8)', 'Med'], ['rgba(249,115,22,0.7)', 'High'], ['rgba(239,68,68,0.9)', 'Very High']].map(([c, l]) => (
                   <div key={l} className="flex items-center gap-1">
@@ -383,3 +383,4 @@ export default function SimilarityReport() {
     </div>
   );
 }
+

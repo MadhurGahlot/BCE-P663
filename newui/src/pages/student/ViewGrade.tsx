@@ -16,7 +16,7 @@ export default function ViewGrade() {
   if (!sub || !assignment) {
     return (
       <div className="max-w-2xl mx-auto p-6 text-center">
-        <div className="text-slate-500">Submission not found.</div>
+        <div className="text-gray-500">Submission not found.</div>
         <button onClick={() => navigate(-1)} className="mt-3 text-blue-600 hover:underline text-sm">Go back</button>
       </div>
     );
@@ -30,22 +30,22 @@ export default function ViewGrade() {
 
   const gradeColor = pct !== null
     ? pct >= 75 ? 'text-green-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-600'
-    : 'text-slate-400';
+    : 'text-gray-400';
 
   const gradeGradient = pct !== null
     ? pct >= 75 ? 'from-green-500 to-teal-500' : pct >= 50 ? 'from-yellow-500 to-orange-500' : 'from-red-500 to-rose-500'
-    : 'from-slate-400 to-slate-500';
+    : 'from-gray-400 to-gray-500';
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-500">
+        <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-500">
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Grade Details</h1>
-          <p className="text-slate-500 text-sm">{assignment.title}</p>
+          <h1 className="text-xl font-bold text-gray-900">Grade Details</h1>
+          <p className="text-gray-500 text-sm">{assignment.title}</p>
         </div>
       </div>
 
@@ -83,18 +83,18 @@ export default function ViewGrade() {
 
       {/* Progress */}
       {isGraded && pct !== null && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex justify-between text-sm mb-2">
-            <span className="font-medium text-slate-700">Your Score</span>
+            <span className="font-medium text-gray-700">Your Score</span>
             <span className={`font-bold ${gradeColor}`}>{pct.toFixed(1)}%</span>
           </div>
-          <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all bg-gradient-to-r ${gradeGradient}`}
               style={{ width: `${pct}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-slate-400 mt-1.5">
+          <div className="flex justify-between text-xs text-gray-400 mt-1.5">
             <span>0</span>
             <span className="text-red-400">50% (Pass)</span>
             <span className="text-green-400">100%</span>
@@ -103,8 +103,8 @@ export default function ViewGrade() {
       )}
 
       {/* Submission Info */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <h2 className="font-semibold text-slate-800 mb-4">Submission Details</h2>
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+        <h2 className="font-semibold text-gray-800 mb-4">Submission Details</h2>
         <dl className="space-y-3">
           {[
             { label: 'File Submitted', value: sub.fileName, icon: FileText },
@@ -112,13 +112,13 @@ export default function ViewGrade() {
             { label: 'Assignment Deadline', value: assignment.deadline, icon: Clock },
           ].map(({ label, value, icon: Icon }) => (
             <div key={label} className="flex items-start justify-between gap-2">
-              <dt className="text-sm text-slate-500 flex items-center gap-1.5"><Icon size={13} />{label}</dt>
-              <dd className="text-sm font-medium text-slate-700 text-right">{value}</dd>
+              <dt className="text-sm text-gray-500 flex items-center gap-1.5"><Icon size={13} />{label}</dt>
+              <dd className="text-sm font-medium text-gray-700 text-right">{value}</dd>
             </div>
           ))}
           {sub.maxSimilarity !== undefined && (
             <div className="flex items-start justify-between gap-2">
-              <dt className="text-sm text-slate-500 flex items-center gap-1.5"><AlertTriangle size={13} />Similarity Score</dt>
+              <dt className="text-sm text-gray-500 flex items-center gap-1.5"><AlertTriangle size={13} />Similarity Score</dt>
               <dd>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${getSimilarityBg(sub.maxSimilarity)}`}>
                   {(sub.maxSimilarity * 100).toFixed(0)}% match
@@ -143,8 +143,8 @@ export default function ViewGrade() {
 
       {/* Rubric Breakdown */}
       {sub.rubricGrades && sub.rubricGrades.length > 0 && assignment.rubric.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-          <h2 className="font-semibold text-slate-800 mb-4">Rubric Breakdown</h2>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-800 mb-4">Rubric Breakdown</h2>
           <div className="space-y-4">
             {assignment.rubric.map(criterion => {
               const rg = sub.rubricGrades!.find(r => r.criterionId === criterion.id);
@@ -152,28 +152,28 @@ export default function ViewGrade() {
               const pctCrit = (marks / criterion.maxMarks) * 100;
 
               return (
-                <div key={criterion.id} className="border border-slate-100 rounded-xl p-4">
+                <div key={criterion.id} className="border border-gray-100 rounded-xl p-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex-1">
-                      <div className="text-sm font-semibold text-slate-800">{criterion.criterion}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">{criterion.description}</div>
+                      <div className="text-sm font-semibold text-gray-800">{criterion.criterion}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{criterion.description}</div>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <span className={`text-base font-bold ${pctCrit >= 75 ? 'text-green-600' : pctCrit >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>{marks}</span>
-                      <span className="text-sm text-slate-400">/{criterion.maxMarks}</span>
+                      <span className="text-sm text-gray-400">/{criterion.maxMarks}</span>
                     </div>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
                     <div
                       className={`h-full rounded-full ${pctCrit >= 75 ? 'bg-green-500' : pctCrit >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
                       style={{ width: `${pctCrit}%` }}
                     />
                   </div>
                   {rg?.comment && (
-                    <p className="text-xs text-slate-500 italic mt-1">"{rg.comment}"</p>
+                    <p className="text-xs text-gray-500 italic mt-1">"{rg.comment}"</p>
                   )}
                   {!rg?.comment && (
-                    <p className="text-xs text-slate-300 italic">No comment</p>
+                    <p className="text-xs text-gray-300 italic">No comment</p>
                   )}
                 </div>
               );
@@ -181,11 +181,11 @@ export default function ViewGrade() {
           </div>
 
           {/* Total */}
-          <div className="mt-4 flex items-center justify-between pt-4 border-t border-slate-100">
-            <span className="font-semibold text-slate-700">Total</span>
+          <div className="mt-4 flex items-center justify-between pt-4 border-t border-gray-100">
+            <span className="font-semibold text-gray-700">Total</span>
             <div>
               <span className={`text-xl font-bold ${gradeColor}`}>{sub.grade}</span>
-              <span className="text-sm text-slate-400">/{assignment.totalMarks}</span>
+              <span className="text-sm text-gray-400">/{assignment.totalMarks}</span>
             </div>
           </div>
         </div>
@@ -201,3 +201,4 @@ export default function ViewGrade() {
     </div>
   );
 }
+

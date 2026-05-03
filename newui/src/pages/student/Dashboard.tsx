@@ -30,7 +30,7 @@ export default function StudentDashboard() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       {/* Welcome Banner */}
-      <div className="bg-linear-to-r from-blue-600 to-teal-600 rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold mb-1">Hello, {currentUser?.name?.split(' ')[0]}! 👋</h1>
@@ -58,7 +58,7 @@ export default function StudentDashboard() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle size={18} className="text-yellow-500" />
-            <h2 className="font-semibold text-slate-800">Pending Submissions</h2>
+            <h2 className="font-semibold text-gray-800">Pending Submissions</h2>
             <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">{pendingAssignments.length}</span>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
@@ -74,10 +74,10 @@ export default function StudentDashboard() {
                         {daysLeft}d left
                       </span>
                     </div>
-                    <h3 className="font-semibold text-slate-800">{a.title}</h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{a.description}</p>
+                    <h3 className="font-semibold text-gray-800">{a.title}</h3>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{a.description}</p>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-slate-400">
+                  <div className="flex items-center justify-between text-xs text-gray-400">
                     <span className="flex items-center gap-1"><Clock size={11} /> Due {a.deadline}</span>
                     <span>{a.totalMarks} marks</span>
                     <span>{teacher?.name}</span>
@@ -98,14 +98,14 @@ export default function StudentDashboard() {
       {/* My Submissions */}
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <FileText size={18} className="text-slate-500" />
-          <h2 className="font-semibold text-slate-800">My Submissions</h2>
+          <FileText size={18} className="text-gray-500" />
+          <h2 className="font-semibold text-gray-800">My Submissions</h2>
         </div>
         {mySubmissions.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-            <FileText size={40} className="mx-auto mb-3 text-slate-300" />
-            <div className="text-slate-500 font-medium">No submissions yet</div>
-            <p className="text-slate-400 text-sm mt-1">Submit your first assignment to see it here</p>
+          <div className="text-center py-12 bg-white rounded-2xl border border-gray-200">
+            <FileText size={40} className="mx-auto mb-3 text-gray-300" />
+            <div className="text-gray-500 font-medium">No submissions yet</div>
+            <p className="text-gray-400 text-sm mt-1">Submit your first assignment to see it here</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -116,13 +116,13 @@ export default function StudentDashboard() {
               const pct = isGraded && assign ? ((sub.grade! / assign.totalMarks) * 100).toFixed(1) : null;
 
               return (
-                <div key={sub.id} className={`bg-white rounded-2xl border shadow-sm p-5 flex items-center gap-4 flex-wrap ${isGraded ? 'border-green-200' : 'border-slate-200'}`}>
+                <div key={sub.id} className={`bg-white rounded-2xl border shadow-sm p-5 flex items-center gap-4 flex-wrap ${isGraded ? 'border-green-200' : 'border-gray-200'}`}>
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isGraded ? 'bg-green-100' : 'bg-yellow-50'}`}>
                     {isGraded ? <CheckCircle size={22} className="text-green-600" /> : <Clock size={22} className="text-yellow-500" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-slate-800">{assign?.title ?? sub.assignmentId}</div>
-                    <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-3">
+                    <div className="font-semibold text-gray-800">{assign?.title ?? sub.assignmentId}</div>
+                    <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-3">
                       <span className="flex items-center gap-1"><FileText size={10} /> {sub.fileName}</span>
                       <span>Submitted: {new Date(sub.submittedAt).toLocaleDateString()}</span>
                       {teacher && <span>{teacher.name}</span>}
@@ -134,7 +134,7 @@ export default function StudentDashboard() {
                         <div className={`text-xl font-bold ${Number(pct) >= 75 ? 'text-green-600' : Number(pct) >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
                           {sub.grade}/{assign?.totalMarks}
                         </div>
-                        <div className="text-xs text-slate-400">{pct}%</div>
+                        <div className="text-xs text-gray-400">{pct}%</div>
                       </div>
                     ) : (
                       <span className="text-xs bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full font-medium">Awaiting grade</span>
@@ -158,15 +158,15 @@ export default function StudentDashboard() {
       {/* All Available Assignments */}
       {relevantAssignments.length > 0 && (
         <div>
-          <h2 className="font-semibold text-slate-800 mb-4">All Assignments</h2>
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <h2 className="font-semibold text-gray-800 mb-4">All Assignments</h2>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase">Assignment</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase hidden sm:table-cell">Deadline</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase hidden sm:table-cell">Marks</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Status</th>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Assignment</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Deadline</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Marks</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -175,13 +175,13 @@ export default function StudentDashboard() {
                   const sub = mySubmissions.find(s => s.assignmentId === a.id);
                   const isPast = new Date(a.deadline) < new Date();
                   return (
-                    <tr key={a.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                    <tr key={a.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3">
-                        <div className="text-sm font-medium text-slate-800">{a.title}</div>
+                        <div className="text-sm font-medium text-gray-800">{a.title}</div>
                         <span className="text-xs text-blue-600 font-medium">{a.subject}</span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-500 hidden sm:table-cell">{a.deadline}</td>
-                      <td className="px-4 py-3 text-sm text-slate-500 hidden sm:table-cell">{a.totalMarks}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{a.deadline}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{a.totalMarks}</td>
                       <td className="px-4 py-3">
                         {sub ? (
                           <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Submitted</span>
@@ -213,3 +213,4 @@ export default function StudentDashboard() {
     </div>
   );
 }
+
