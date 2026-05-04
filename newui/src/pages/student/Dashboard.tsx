@@ -55,7 +55,7 @@ export default function StudentDashboard() {
   const dept = currentUser?.department;
 
   // Show assignments relevant to student's department
-  const relevantAssignments = assignments.filter(a => a.subject === dept || dept === undefined);
+  const relevantAssignments = assignments.filter(a => !dept || a.department === dept);
 
   const submittedIds = new Set(mySubmissions.map(s => s.assignmentId));
   const pendingAssignments = relevantAssignments.filter(a =>

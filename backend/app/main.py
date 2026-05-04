@@ -9,12 +9,16 @@ from app.models.user import User
 from app.models.assignments import Assignment
 from app.models.submission import Submission
 from app.models.grading import GradingRule
+from app.models import reset_password
+from app.models import user
 
 # ✅ IMPORT ROUTES
 from app.routes import auth
 from app.routes import assignments
 from app.routes import submission
 from app.routes import grading
+from app.routes import reset_password
+
 
 
 app = FastAPI(
@@ -50,6 +54,7 @@ app.include_router(assignments.router)
 app.include_router(submission.router)
 app.include_router(similarity.router)
 app.include_router(grading.router)
+app.include_router(reset_password.router)
 
 
 @app.get("/")

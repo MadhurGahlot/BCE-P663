@@ -138,37 +138,48 @@ export default function SubmitAssignment() {
   };
 
   const handleSubmit = async () => {
-    if (mode === 'file' && !file) { toast.error('Please select a file.'); return; }
-    if (mode === 'paste' && !textContent.trim()) { toast.error('Please enter your submission content.'); return; }
+  if (mode === 'file' && !file) { 
+    toast.error('Please select a file.'); 
+    return; 
+  }
 
-    setSubmitting(true);
+  if (mode === 'paste' && !textContent.trim()) { 
+    toast.error('Please enter your submission content.'); 
+    return; 
+  }
 
-    try {
-      const formData = new FormData();
-      formData.append('assignment_id', id ?? '');
-      formData.append('student_id', currentUser?.id ?? '');
+  setSubmitting(true);
 
-      if (mode === 'file' && file) {
-        formData.append('file', file);
-      } else if (mode === 'paste') {
-        const blob = new Blob([textContent], { type: 'text/plain' });
-        const fileName = `submission_${currentUser?.name?.replace(/\s/g, '_') || 'student'}.txt`;
-        formData.append('file', blob, fileName);
-      }
+  try {
+    const formData = new FormData();
 
-      await api.post('/submissions/submit', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+// ✅ FIXED TYPES
+formData.append("assignment_id", String(id));
+formData.append("student_id", String(currentUser?.id));
 
-      setDone(true);
-      toast.success('Assignment submitted successfully!');
-    } catch (error) {
-      console.error('Submission failed', error);
-      toast.error('Failed to submit assignment. Ensure your file size < 25MB and format is allowed (.pdf, .txt, .jpg).');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+if (mode === 'file' && file) {
+  formData.append('file', file);
+} else if (mode === 'paste') {
+  const blob = new Blob([textContent], { type: 'text/plain' });
+  const fileName = `submission_${currentUser?.name?.replace(/\s/g, '_') || 'student'}.txt`;
+  formData.append('file', blob, fileName);
+}
+
+await api.post("/submissions/submit", formData, {
+  headers: {
+    "Content-Type": "multipart/form-data",
+  },
+});
+
+    setDone(true);
+    toast.success('Assignment submitted successfully!');
+  } catch (error) {
+    console.error('Submission failed', error);
+    toast.error('Failed to submit assignment.');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   if (done) {
     return (

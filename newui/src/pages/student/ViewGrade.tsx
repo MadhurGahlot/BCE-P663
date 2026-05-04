@@ -4,14 +4,20 @@ import { ArrowLeft, Award, CheckCircle, Clock, FileText, AlertTriangle, Star } f
 import { useApp } from '../../store/AppContext';
 import { getSimilarityBg } from '../../store/similarity';
 
+
+
 export default function ViewGrade() {
   const { subId } = useParams<{ subId: string }>();
   const navigate = useNavigate();
-  const { submissions, assignments, users } = useApp();
+  const app = useApp();
 
-  const sub = submissions.find(s => s.id === subId);
-  const assignment = sub ? assignments.find(a => a.id === sub.assignmentId) : null;
-  const teacher = assignment ? users.find(u => u.id === assignment.teacherId) : null;
+  const submissions = app.submissions || [];
+  const assignments = app.assignments || [];
+  const users = app.users || [];
+
+  const sub = submissions.find(s => s.id === Number(subId));
+  const assignment = sub ? assignments?.find(a => a.id === sub.assignmentId) : null;
+  const teacher = assignment ? users?.find(u => u.id === assignment.teacherId) : null;
 
   if (!sub || !assignment) {
     return (
@@ -147,7 +153,7 @@ export default function ViewGrade() {
           <h2 className="font-semibold text-gray-800 mb-4">Rubric Breakdown</h2>
           <div className="space-y-4">
             {assignment.rubric.map(criterion => {
-              const rg = sub.rubricGrades!.find(r => r.criterionId === criterion.id);
+              const rg = sub.rubricGrades?.find(r => r.criterionId === criterion.id);
               const marks = rg?.marks ?? 0;
               const pctCrit = (marks / criterion.maxMarks) * 100;
 
