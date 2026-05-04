@@ -14,12 +14,8 @@ interface RegisterResult {
 }
 
 interface AppContextType extends AppState {
-<<<<<<< HEAD
-  login: (email: string, password: string) => User | null;
-  register: (name: string, email: string, password: string, role: 'teacher' | 'student', department: string) => RegisterResult;
-=======
   login: (token: string, user: User) => void;
->>>>>>> 9c9939ca1c7d2b2969ca0f43a5858545e0dc77e5
+  register: (name: string, email: string, password: string, role: 'teacher' | 'student', department: string) => Promise<RegisterResult>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 
@@ -66,22 +62,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState({ currentUser: user, isLoading: false });
   }, []);
 
-  const register = useCallback((name: string, email: string, password: string, role: 'teacher' | 'student', department: string): RegisterResult => {
-    const exists = state.users.some(u => u.email === email);
-    if (exists) {
-      return { success: false, error: 'An account with this email already exists' };
+  const register = useCallback(async (name: string, email: string, password: string, role: 'teacher' | 'student', department: string): Promise<RegisterResult> => {
+    try {
+      // 1. Register the user via backend API
+      await api.post('/auth/register', { name, email, password, role, department });
+
+      // 2. Auto-login after successful registration
+      const params = new URLSearchParams();
+      params.append('username', email);
+      params.append('password', password);
+
+      const loginRes = await api.post('/auth/login', params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+
+      const token = loginRes.data.access_token;
+      localStorage.setItem('token', token);
+
+      // 3. Fetch the full user object
+      const userRes = await api.get('/auth/me');
+      const user = userRes.data;
+
+      setState({ currentUser: user, isLoading: false });
+      return { success: true, user };
+    } catch (err: any) {
+      const message = err.response?.data?.detail || 'Registration failed. Please try again.';
+      return { success: false, error: message };
     }
-    const newUser: User = {
-      id: `${role}-${Date.now()}`,
-      name,
-      email,
-      password,
-      role,
-      department: department as User['department'],
-    };
-    setState(prev => ({ ...prev, users: [...prev.users, newUser], currentUser: newUser }));
-    return { success: true, user: newUser };
-  }, [state.users]);
+  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('token');

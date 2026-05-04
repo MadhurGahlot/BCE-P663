@@ -13,6 +13,7 @@ const navItems = [
   { to: '/teacher/assignments', label: 'Assignments', icon: BookOpen },
   { to: '/teacher/students', label: 'Students', icon: Users },
   { to: '/teacher/reports', label: 'Reports', icon: BarChart3 },
+  { to: '/teacher/profile', label: 'Settings', icon: BookOpenCheck }, // Using an available icon or importing Settings
 ];
 
 export function TeacherLayout() {

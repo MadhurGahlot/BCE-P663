@@ -7,6 +7,7 @@ import { useApp } from '../store/AppContext';
 const navItems = [
   { to: '/student', label: 'My Assignments', icon: BookOpen, end: true },
   { to: '/student/grades', label: 'My Grades', icon: Star },
+  { to: '/student/profile', label: 'Settings', icon: BookOpenCheck },
 ];
 
 export function StudentLayout() {

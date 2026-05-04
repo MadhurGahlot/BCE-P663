@@ -34,16 +34,20 @@ export default function SignUp() {
     }
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
 
-    const result = register(name, email, password, tab, department);
-    setLoading(false);
+    try {
+      const result = await register(name, email, password, tab, department);
 
-    if (result.success && result.user) {
-      if (result.user.role === 'teacher') navigate('/teacher');
-      else navigate('/student');
-    } else {
-      setError(result.error || 'Registration failed');
+      if (result.success && result.user) {
+        if (result.user.role === 'teacher') navigate('/teacher');
+        else navigate('/student');
+      } else {
+        setError(result.error || 'Registration failed');
+      }
+    } catch {
+      setError('Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
