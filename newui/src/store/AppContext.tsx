@@ -11,8 +11,15 @@ interface AppState {
   similarityResults: SimilarityResult[];
 }
 
+interface RegisterResult {
+  success: boolean;
+  user?: User;
+  error?: string;
+}
+
 interface AppContextType extends AppState {
   login: (email: string, password: string) => User | null;
+  register: (name: string, email: string, password: string, role: 'teacher' | 'student', department: string) => RegisterResult;
   logout: () => void;
   addAssignment: (assignment: Assignment) => void;
   updateAssignment: (assignment: Assignment) => void;
@@ -68,6 +75,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return user;
     }
     return null;
+  }, [state.users]);
+
+  const register = useCallback((name: string, email: string, password: string, role: 'teacher' | 'student', department: string): RegisterResult => {
+    const exists = state.users.some(u => u.email === email);
+    if (exists) {
+      return { success: false, error: 'An account with this email already exists' };
+    }
+    const newUser: User = {
+      id: `${role}-${Date.now()}`,
+      name,
+      email,
+      password,
+      role,
+      department: department as User['department'],
+    };
+    setState(prev => ({ ...prev, users: [...prev.users, newUser], currentUser: newUser }));
+    return { success: true, user: newUser };
   }, [state.users]);
 
   const logout = useCallback(() => {
@@ -153,6 +177,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       ...state,
       login,
+      register,
       logout,
       addAssignment,
       updateAssignment,

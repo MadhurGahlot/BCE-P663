@@ -3,6 +3,7 @@ import RootLayout from './components/RootLayout';
 import { TeacherLayout } from './components/TeacherLayout';
 import { StudentLayout } from './components/StudentLayout';
 import Login from './pages/Login';
+import SignUp from './pages/SignIn';
 import Landing from './pages/landing';
 import TeacherDashboard from './pages/teacher/Dashboard';
 import Assignments from './pages/teacher/Assignments';
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <Landing /> },
       { path: '/login', element: <Login /> },
+      { path: '/signup', element: <SignUp /> },
       {
         path: '/teacher',
         element: <TeacherLayout />,

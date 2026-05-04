@@ -15,12 +15,20 @@ export default function Landing() {
               <h1 className="font-semibold text-xl text-gray-900">GradeBook</h1>
             </div>
           </div>
-          <Link
-            to="/login"
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Sign In
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/login"
+              className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:border-blue-600 hover:text-blue-600 transition-colors text-sm font-medium"
+            >
+              Sign In
+            </Link>
+            <Link
+              to="/signup"
+              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all text-sm font-medium"
+            >
+              Sign Up
+            </Link>
+          </div>
         </div>
       </header>
 
