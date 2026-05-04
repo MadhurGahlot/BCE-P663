@@ -8,28 +8,74 @@ import { useApp } from '../../store/AppContext';
 import { getSimilarityBg } from '../../store/similarity';
 import { exportToExcel, exportToPDF } from '../../store/exportUtils';
 import type { RubricGrade, Submission } from '../../store/types';
+import api from '../../services/api';
 import { toast } from 'sonner';
 
 export default function Grading() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getAssignmentById, getSubmissionsForAssignment, users, updateSubmission, getSimilarityResult } = useApp();
+  const { users } = useApp();
 
-  const assignment = getAssignmentById(id ?? '');
-  const submissions = getSubmissionsForAssignment(id ?? '');
-  const simResult = getSimilarityResult(id ?? '');
+  const [assignment, setAssignment] = useState<any>(null);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [simResult, setSimResult] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   const [currentIdx, setCurrentIdx] = useState(0);
   const [gradingMode, setGradingMode] = useState<'rubric' | 'direct'>('rubric');
   const [showContent, setShowContent] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const assignRes = await api.get(`/assignments/${id}`);
+        setAssignment({
+          ...assignRes.data,
+          id: assignRes.data.id.toString(),
+          totalMarks: assignRes.data.total_marks,
+          description: assignRes.data.description || `Assignment for ${assignRes.data.department}`,
+          rubric: [], // Backend lacks rubric
+        });
+
+        const subRes = await api.get(`/submissions/assignment/${id}`);
+        setSubmissions(subRes.data.map((s: any) => ({
+          ...s,
+          id: s.id.toString(),
+          studentId: s.student_id ? s.student_id.toString() : 'student',
+          fileName: s.file_path ? s.file_path.split('/').pop() : 'submission.txt',
+          submittedAt: s.created_at || new Date().toISOString(),
+          content: s.ocr_text || 'Content downloaded from server...',
+        })));
+
+        try {
+          const simRes = await api.get(`/similarity/assignment/${id}`);
+          if (simRes.data && simRes.data.length > 0) {
+            setSimResult({
+              pairs: simRes.data.map((r: any) => ({
+                submission1Id: r.submissionid1.toString(),
+                submission2Id: r.submissionid2.toString(),
+                similarity: r.similarityscore / 100,
+              }))
+            });
+          }
+        } catch (e) { }
+      } catch (err) {
+        toast.error("Failed to load grading details");
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) fetchData();
+  }, [id]);
 
   const sub = submissions[currentIdx];
 
   const [directGrade, setDirectGrade] = useState<number | ''>(sub?.grade ?? '');
   const [feedback, setFeedback] = useState(sub?.feedback ?? '');
   const [rubricGrades, setRubricGrades] = useState<RubricGrade[]>(
-    assignment?.rubric.map(r => {
-      const existing = sub?.rubricGrades?.find(rg => rg.criterionId === r.id);
+    assignment?.rubric.map((r: any) => {
+      const existing = sub?.rubricGrades?.find((rg: any) => rg.criterionId === r.id);
       return existing ?? { criterionId: r.id, marks: 0, comment: '' };
     }) ?? []
   );
@@ -40,14 +86,15 @@ export default function Grading() {
     setDirectGrade(sub.grade ?? '');
     setFeedback(sub.feedback ?? '');
     setRubricGrades(
-      assignment.rubric.map(r => {
-        const existing = sub.rubricGrades?.find(rg => rg.criterionId === r.id);
+      assignment.rubric.map((r: any) => {
+        const existing = sub.rubricGrades?.find((rg: any) => rg.criterionId === r.id);
         return existing ?? { criterionId: r.id, marks: 0, comment: '' };
       })
     );
     setSaved(false);
   }, [currentIdx, sub?.id]);
 
+  if (loading) return <div className="p-10 text-center text-gray-500">Loading...</div>;
   if (!assignment) return <div className="p-6 text-gray-500">Assignment not found.</div>;
   if (submissions.length === 0) {
     return (
@@ -60,19 +107,26 @@ export default function Grading() {
   }
 
   const rubricTotal = rubricGrades.reduce((a, r) => a + (r.marks || 0), 0);
-  const computedGrade = gradingMode === 'rubric' ? rubricTotal : (directGrade === '' ? 0 : directGrade);
+  const computedGrade = gradingMode === 'rubric' && assignment.rubric.length > 0 ? rubricTotal : (directGrade === '' ? 0 : directGrade);
 
-  const handleSave = () => {
-    const updatedSub: Submission = {
-      ...sub,
-      grade: Number(computedGrade),
-      feedback,
-      rubricGrades: gradingMode === 'rubric' ? rubricGrades : sub.rubricGrades,
-    };
-    updateSubmission(updatedSub);
-    setSaved(true);
-    toast.success(`Saved grade ${computedGrade}/${assignment.totalMarks} for ${users.find(u => u.id === sub.studentId)?.name}`);
-    setTimeout(() => setSaved(false), 3000);
+  const handleSave = async () => {
+    try {
+      await api.put(`/grading/${sub.id}`, {
+        grade: Number(computedGrade),
+        feedback: feedback
+      });
+
+      const newSubs = [...submissions];
+      newSubs[currentIdx].grade = Number(computedGrade);
+      newSubs[currentIdx].feedback = feedback;
+      setSubmissions(newSubs);
+
+      setSaved(true);
+      toast.success(`Saved grade ${computedGrade}/${assignment.totalMarks} for ${users.find(u => u.id === sub.studentId)?.name || 'Student'}`);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      toast.error("Failed to save grade");
+    }
   };
 
   const handleSaveAndNext = () => {
@@ -83,8 +137,8 @@ export default function Grading() {
   };
 
   const getStudentName = (studentId: string) => users.find(u => u.id === studentId)?.name ?? studentId;
-  const simScore = simResult?.pairs.find(p => p.submission1Id === sub.id || p.submission2Id === sub.id);
-  const maxSim = sub.maxSimilarity;
+  const simScore = simResult?.pairs.find((p: any) => p.submission1Id === sub?.id || p.submission2Id === sub?.id);
+  const maxSim = sub?.maxSimilarity;
 
   return (
     <div className="p-6 space-y-5">
@@ -239,7 +293,7 @@ export default function Grading() {
                 </div>
               </div>
               <div className="space-y-4">
-                {assignment.rubric.map(criterion => {
+                {assignment.rubric.map((criterion: any) => {
                   const rg = rubricGrades.find(r => r.criterionId === criterion.id);
                   return (
                     <div key={criterion.id} className="border border-gray-100 rounded-xl p-4">

@@ -1,11 +1,57 @@
 import { Link } from 'react-router';
 import { Clock, CheckCircle, Upload, Award, FileText, AlertTriangle } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
+import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
 
 export default function StudentDashboard() {
-  const { currentUser, assignments, getStudentSubmissions, users } = useApp();
+  const { currentUser } = useApp();
 
-  const mySubmissions = getStudentSubmissions(currentUser?.id ?? '');
+  const [loading, setLoading] = useState(true);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [mySubmissions, setMySubmissions] = useState<any[]>([]);
+  // Backend doesn't have an easy users endpoint for students to get teacher names
+  const [teachers] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const assignRes = await api.get('/assignments/');
+        const myAssigns = assignRes.data.map((a: any) => ({
+          ...a,
+          id: a.id.toString(),
+          totalMarks: a.total_marks,
+          deadline: a.deadline,
+        }));
+        setAssignments(myAssigns);
+
+        const allSubs: any[] = [];
+        await Promise.all(myAssigns.map(async (a: any) => {
+          try {
+            const subRes = await api.get(`/submissions/assignment/${a.id}`);
+            if (subRes.data && subRes.data.length > 0) {
+              const s = subRes.data[0];
+              allSubs.push({
+                ...s,
+                id: s.id.toString(),
+                assignmentId: a.id.toString(),
+                studentId: s.student_id ? s.student_id.toString() : 'student',
+                fileName: s.file_path ? s.file_path.split('/').pop() : 'submission.txt',
+                submittedAt: s.created_at || new Date().toISOString(),
+              });
+            }
+          } catch (e) { }
+        }));
+        setMySubmissions(allSubs);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [currentUser]);
+
   const dept = currentUser?.department;
 
   // Show assignments relevant to student's department
@@ -19,13 +65,15 @@ export default function StudentDashboard() {
   const gradedSubmissions = mySubmissions.filter(s => s.grade !== undefined);
   const avgGrade = gradedSubmissions.length > 0
     ? (() => {
-        const total = gradedSubmissions.reduce((acc, s) => {
-          const assign = assignments.find(a => a.id === s.assignmentId);
-          return acc + (s.grade! / (assign?.totalMarks ?? 100)) * 100;
-        }, 0);
-        return (total / gradedSubmissions.length).toFixed(1);
-      })()
+      const total = gradedSubmissions.reduce((acc, s) => {
+        const assign = assignments.find(a => a.id === s.assignmentId);
+        return acc + (s.grade! / (assign?.totalMarks ?? 100)) * 100;
+      }, 0);
+      return (total / gradedSubmissions.length).toFixed(1);
+    })()
     : null;
+
+  if (loading) return <div className="p-10 text-center text-gray-500">Loading Dashboard...</div>;
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
@@ -64,7 +112,7 @@ export default function StudentDashboard() {
           <div className="grid sm:grid-cols-2 gap-4">
             {pendingAssignments.map(a => {
               const daysLeft = Math.ceil((new Date(a.deadline).getTime() - Date.now()) / 86400000);
-              const teacher = users.find(u => u.id === a.teacherId);
+              const teacherName = teachers[a.created_by] || `Teacher ${a.created_by || ''}`;
               return (
                 <div key={a.id} className="bg-white rounded-2xl border border-yellow-200 shadow-sm p-5 flex flex-col gap-3">
                   <div>
@@ -80,7 +128,7 @@ export default function StudentDashboard() {
                   <div className="flex items-center justify-between text-xs text-gray-400">
                     <span className="flex items-center gap-1"><Clock size={11} /> Due {a.deadline}</span>
                     <span>{a.totalMarks} marks</span>
-                    <span>{teacher?.name}</span>
+                    <span>{teacherName}</span>
                   </div>
                   <Link
                     to={`/student/submit/${a.id}`}
@@ -111,8 +159,8 @@ export default function StudentDashboard() {
           <div className="space-y-3">
             {mySubmissions.map(sub => {
               const assign = assignments.find(a => a.id === sub.assignmentId);
-              const teacher = assign ? users.find(u => u.id === assign.teacherId) : null;
-              const isGraded = sub.grade !== undefined;
+              const teacherName = assign ? teachers[assign.created_by] || `Teacher ${assign.created_by}` : null;
+              const isGraded = sub.grade !== undefined && sub.grade !== null;
               const pct = isGraded && assign ? ((sub.grade! / assign.totalMarks) * 100).toFixed(1) : null;
 
               return (
@@ -125,7 +173,7 @@ export default function StudentDashboard() {
                     <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-3">
                       <span className="flex items-center gap-1"><FileText size={10} /> {sub.fileName}</span>
                       <span>Submitted: {new Date(sub.submittedAt).toLocaleDateString()}</span>
-                      {teacher && <span>{teacher.name}</span>}
+                      {teacherName && <span>{teacherName}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

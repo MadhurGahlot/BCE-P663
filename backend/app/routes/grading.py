@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.assignments import Assignment
 from app.models.grading import GradingRule
+from app.models.submission import Submission
 from app.routes.auth import get_current_teacher
 
 router = APIRouter(prefix="/grading", tags=["Grading"])
@@ -52,3 +53,27 @@ def set_grading_rules(
     db.refresh(rule)
 
     return {"message": "Grading rules saved"}
+
+from pydantic import BaseModel
+class GradeSubmissionRequest(BaseModel):
+    grade: int
+    feedback: str = ""
+
+@router.put("/{submission_id}")
+def grade_submission(
+    submission_id: int,
+    request: GradeSubmissionRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_teacher),
+):
+    sub = db.query(Submission).filter(Submission.id == submission_id).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Submission not found")
+        
+    sub.grade = request.grade
+    sub.feedback = request.feedback
+    
+    db.commit()
+    db.refresh(sub)
+    
+    return {"message": "Submission graded successfully", "grade": sub.grade}

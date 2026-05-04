@@ -6,26 +6,91 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useApp } from '../../store/AppContext';
 import { getSimilarityBg } from '../../store/similarity';
+import api from '../../services/api';
+import React, { useState, useEffect } from 'react';
 
 export default function TeacherDashboard() {
-  const { currentUser, getTeacherAssignments, getSubmissionsForAssignment, users, similarityResults } = useApp();
+  const { currentUser } = useApp();
 
-  const assignments = getTeacherAssignments(currentUser?.id ?? '');
-  const allSubmissions = assignments.flatMap(a => getSubmissionsForAssignment(a.id));
-  const gradedCount = allSubmissions.filter(s => s.grade !== undefined).length;
-  const highSimilarityCount = allSubmissions.filter(s => (s.maxSimilarity ?? 0) >= 0.6).length;
+  const [loading, setLoading] = useState(true);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [submissionsData, setSubmissionsData] = useState<Record<string, any[]>>({});
+  const [similarityResultsData, setSimilarityResultsData] = useState<Record<string, any>>({});
+  const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const assignRes = await api.get('/assignments/');
+        // Assume API returns array
+        const myAssigns = assignRes.data.map((a: any) => ({
+          ...a,
+          id: a.id.toString(),
+          totalMarks: a.total_marks,
+          deadline: a.deadline,
+        }));
+        setAssignments(myAssigns);
+
+        const subsMap: Record<string, any[]> = {};
+        const simMap: Record<string, any> = {};
+        const allSubs: any[] = [];
+
+        await Promise.all(myAssigns.map(async (a: any) => {
+          try {
+            const subRes = await api.get(`/submissions/assignment/${a.id}`);
+            const subs = subRes.data.map((s: any) => ({
+              ...s,
+              id: s.id.toString(),
+              studentId: s.student_id ? s.student_id.toString() : 'student',
+            }));
+            subsMap[a.id] = subs;
+            allSubs.push(...subs);
+          } catch (e) { }
+
+          try {
+            const simRes = await api.get(`/similarity/assignment/${a.id}`);
+            if (simRes.data && simRes.data.length > 0) {
+              simMap[a.id] = {
+                assignmentId: a.id,
+                pairs: simRes.data.map((r: any) => ({
+                  submission1Id: r.submissionid1.toString(),
+                  submission2Id: r.submissionid2.toString(),
+                  similarity: r.similarityscore / 100,
+                }))
+              };
+            }
+          } catch (e) { }
+        }));
+
+        setSubmissionsData(subsMap);
+        setSimilarityResultsData(simMap);
+        setAllSubmissions(allSubs);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [currentUser]);
+
+  if (loading) return <div className="p-10 text-center text-gray-500">Loading Dashboard...</div>;
+
+  const gradedCount = allSubmissions.filter(s => s.grade !== null && s.grade !== undefined).length;
+  // Approximating max similarity per submission using pairs
+  const highSimilarityCount = Object.values(similarityResultsData).flatMap(v => v.pairs).filter(p => p.similarity >= 0.6).length;
 
   const stats = [
     { label: 'Total Assignments', value: assignments.length, icon: BookOpen, color: 'bg-blue-500', textColor: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Total Submissions', value: allSubmissions.length, icon: FileText, color: 'bg-teal-500', textColor: 'text-teal-600', bg: 'bg-teal-50' },
     { label: 'Graded', value: `${gradedCount}/${allSubmissions.length}`, icon: CheckCircle, color: 'bg-green-500', textColor: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'High Similarity', value: highSimilarityCount, icon: AlertTriangle, color: 'bg-red-500', textColor: 'text-red-600', bg: 'bg-red-50' },
+    { label: 'High Similarity Pairs', value: highSimilarityCount, icon: AlertTriangle, color: 'bg-red-500', textColor: 'text-red-600', bg: 'bg-red-50' },
   ];
 
   // Chart: submissions per assignment
   const chartData = assignments.map((a, idx) => {
-    const subs = getSubmissionsForAssignment(a.id);
-    const graded = subs.filter(s => s.grade !== undefined).length;
+    const subs = submissionsData[a.id] || [];
+    const graded = subs.filter(s => s.grade !== null && s.grade !== undefined).length;
     const truncated = a.title.length > 14 ? a.title.slice(0, 14) + '…' : a.title;
     return {
       name: `${idx + 1}. ${truncated}`,
@@ -37,22 +102,19 @@ export default function TeacherDashboard() {
 
   // Recent high-similarity pairs
   const flaggedPairs: { s1Name: string; s2Name: string; similarity: number; assignTitle: string }[] = [];
-  for (const result of similarityResults) {
+  Object.values(similarityResultsData).forEach(result => {
     const assign = assignments.find(a => a.id === result.assignmentId);
-    if (!assign) continue;
+    if (!assign) return;
     for (const pair of result.pairs) {
       if (pair.similarity >= 0.5) {
-        const subs = getSubmissionsForAssignment(assign.id);
+        const subs = submissionsData[assign.id] || [];
         const sub1 = subs.find(s => s.id === pair.submission1Id);
         const sub2 = subs.find(s => s.id === pair.submission2Id);
-        const u1 = users.find(u => u.id === sub1?.studentId);
-        const u2 = users.find(u => u.id === sub2?.studentId);
-        if (u1 && u2) {
-          flaggedPairs.push({ s1Name: u1.name, s2Name: u2.name, similarity: pair.similarity, assignTitle: assign.title });
-        }
+        // Using "Student ID" if we don't have a reliable username fetched across the board
+        flaggedPairs.push({ s1Name: `Student ${sub1?.studentId ?? '?'}`, s2Name: `Student ${sub2?.studentId ?? '?'}`, similarity: pair.similarity, assignTitle: assign.title });
       }
     }
-  }
+  });
   flaggedPairs.sort((a, b) => b.similarity - a.similarity);
 
   return (
@@ -211,8 +273,8 @@ export default function TeacherDashboard() {
             </thead>
             <tbody>
               {assignments.map(a => {
-                const subs = getSubmissionsForAssignment(a.id);
-                const graded = subs.filter(s => s.grade !== undefined).length;
+                const subs = submissionsData[a.id] || [];
+                const graded = subs.filter(s => s.grade !== null && s.grade !== undefined).length;
                 const isPast = new Date(a.deadline) < new Date();
                 return (
                   <tr key={a.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">

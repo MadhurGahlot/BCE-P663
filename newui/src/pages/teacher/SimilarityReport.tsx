@@ -11,20 +11,68 @@ import {
 import { useApp } from '../../store/AppContext';
 import { getSimilarityBg, getSimilarityColor, getSimilarityLabel } from '../../store/similarity';
 import { exportToExcel, exportToPDF } from '../../store/exportUtils';
+import api from '../../services/api';
 import { toast } from 'sonner';
 
 export default function SimilarityReport() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getAssignmentById, getSubmissionsForAssignment, getSimilarityResult, runSimilarityCheck, users } = useApp();
+  const { users } = useApp();
   const [expandedPair, setExpandedPair] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [tab, setTab] = useState<'overview' | 'pairs' | 'heatmap'>('overview');
 
-  const assignment = getAssignmentById(id ?? '');
-  const submissions = getSubmissionsForAssignment(id ?? '');
-  const simResult = getSimilarityResult(id ?? '');
+  const [assignment, setAssignment] = useState<any>(null);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [simResult, setSimResult] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const assignRes = await api.get(`/assignments/${id}`);
+        setAssignment(assignRes.data);
+
+        const subRes = await api.get(`/submissions/assignment/${id}`);
+        // Map backend format id -> string
+        const subs = subRes.data.map((s: any) => ({
+          ...s,
+          id: s.id.toString(),
+          studentId: s.student_id ? s.student_id.toString() : 'student',
+          fileName: s.file_path ? s.file_path.split('/').pop() : 'submission.txt',
+          content: 'Content downloaded from server...', // Mocked as backend doesn't send content
+        }));
+        setSubmissions(subs);
+
+        try {
+          const simRes = await api.get(`/similarity/assignment/${id}`);
+          if (simRes.data && simRes.data.length > 0) {
+            setSimResult({
+              assignmentId: id,
+              computedAt: new Date().toISOString(), // Mock timestamp
+              pairs: simRes.data.map((r: any) => ({
+                submission1Id: r.submissionid1.toString(),
+                submission2Id: r.submissionid2.toString(),
+                similarity: r.similarityscore / 100, // Frontend uses 0-1
+                matchedSections: []
+              }))
+            });
+          }
+        } catch (e) {
+          console.log("No similarity data yet");
+        }
+
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to fetch report data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) { fetchData(); }
+  }, [id]);
+
+  if (loading) return <div className="p-10 text-center text-gray-500">Loading...</div>;
   if (!assignment) return <div className="p-6 text-gray-500">Assignment not found.</div>;
 
   const getStudentName = (submissionId: string) => {
@@ -36,10 +84,16 @@ export default function SimilarityReport() {
   const handleRunCheck = async () => {
     if (submissions.length < 2) { toast.error('Need at least 2 submissions.'); return; }
     setChecking(true);
-    await new Promise(r => setTimeout(r, 2000));
-    runSimilarityCheck(id ?? '');
-    setChecking(false);
-    toast.success('Similarity check complete!');
+    try {
+      await api.get(`/similarity/assignment/${id}`);
+      toast.success('Similarity check complete! Refreshing...');
+      // Refresh page to load new data
+      window.location.reload();
+    } catch (e) {
+      toast.error('Failed to run similarity check on backend.');
+    } finally {
+      setChecking(false);
+    }
   };
 
   const handleExportExcel = () => {
@@ -59,9 +113,8 @@ export default function SimilarityReport() {
   const medRisk = sortedPairs.filter(p => p.similarity >= 0.5 && p.similarity < 0.7);
   const lowRisk = sortedPairs.filter(p => p.similarity < 0.5);
 
-  // Per-student max similarity
   const studentMaxSim = submissions.map(sub => {
-    const maxPair = simResult?.pairs.reduce<number>((max, pair) => {
+    const maxPair = simResult?.pairs.reduce((max: number, pair: any) => {
       if (pair.submission1Id === sub.id || pair.submission2Id === sub.id) {
         return Math.max(max, pair.similarity);
       }
@@ -154,7 +207,7 @@ export default function SimilarityReport() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} angle={-35} textAnchor="end" interval={0} />
                     <YAxis tickFormatter={v => `${(v * 100).toFixed(0)}%`} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, 1]} />
-                    <Tooltip formatter={(val: number) => [`${(val * 100).toFixed(1)}%`, 'Max Similarity']} contentStyle={{ borderRadius: '10px', fontSize: 12 }} />
+                    <Tooltip formatter={(val: any) => [`${(val * 100).toFixed(1)}%`, 'Max Similarity']} contentStyle={{ borderRadius: '10px', fontSize: 12 }} />
                     <Bar dataKey="similarity" radius={[4, 4, 0, 0]}>
                       {studentMaxSim.map((entry, i) => (
                         <Cell key={i} fill={entry.similarity >= 0.7 ? '#ef4444' : entry.similarity >= 0.5 ? '#f97316' : entry.similarity >= 0.3 ? '#eab308' : '#22c55e'} />
@@ -276,7 +329,7 @@ export default function SimilarityReport() {
                               Matched / Copied Sections ({pair.matchedSections.length})
                             </div>
                             <div className="space-y-3">
-                              {pair.matchedSections.map((section, i) => (
+                              {pair.matchedSections.map((section: any, i: number) => (
                                 <div key={i} className="rounded-xl overflow-hidden border border-gray-200">
                                   <div className="px-3 py-1.5 bg-red-50 border-b border-gray-200 flex items-center gap-2">
                                     <AlertTriangle size={12} className="text-red-500" />
@@ -344,7 +397,7 @@ export default function SimilarityReport() {
                           if (ri === ci) {
                             return <td key={col.id} className="w-24 h-10 bg-gray-200 border border-white" title="Same student" />;
                           }
-                          const pairKey1 = simResult.pairs.find(p =>
+                          const pairKey1 = simResult.pairs.find((p: any) =>
                             (p.submission1Id === row.id && p.submission2Id === col.id) ||
                             (p.submission2Id === row.id && p.submission1Id === col.id)
                           );

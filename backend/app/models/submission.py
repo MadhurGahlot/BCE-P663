@@ -22,3 +22,7 @@ class Submission(Base):
     student = relationship("User", back_populates="submissions")
 
     ocr_text = Column(Text, nullable=True)
+    
+    # NEW UI Grading support
+    grade = Column(Integer, nullable=True)
+    feedback = Column(Text, nullable=True)

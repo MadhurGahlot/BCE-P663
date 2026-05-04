@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, Upload, FileText, CheckCircle, X, AlertCircle, Code } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
-import type { Submission } from '../../store/types';
+import api from '../../services/api';
+import type { RubricItem } from '../../store/types';
 import { toast } from 'sonner';
 
 const FILE_ICONS: Record<string, string> = {
@@ -13,11 +14,11 @@ const FILE_ICONS: Record<string, string> = {
 export default function SubmitAssignment() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentUser, getAssignmentById, getStudentSubmissions, addSubmission } = useApp();
+  const { currentUser } = useApp();
 
-  const assignment = getAssignmentById(id ?? '');
-  const mySubmissions = getStudentSubmissions(currentUser?.id ?? '');
-  const existingSub = mySubmissions.find(s => s.assignmentId === id);
+  const [assignment, setAssignment] = useState<any>(null);
+  const [existingSub, setExistingSub] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const [file, setFile] = useState<File | null>(null);
   const [textContent, setTextContent] = useState('');
@@ -25,6 +26,44 @@ export default function SubmitAssignment() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        const assignRes = await api.get(`/assignments/${id}`);
+        // Map backend formatting to frontend
+        const mappedAssign = {
+          ...assignRes.data,
+          id: assignRes.data.id.toString(),
+          totalMarks: assignRes.data.total_marks,
+          description: assignRes.data.description || `Assignment for ${assignRes.data.department}`,
+          rubric: [] as RubricItem[], // Mock empty rubric since backend doesn't support
+          allowedFileTypes: ['.pdf', '.txt', '.png', '.jpg', '.jpeg'],
+        };
+        setAssignment(mappedAssign);
+
+        const subRes = await api.get(`/submissions/assignment/${id}`);
+        if (subRes.data && subRes.data.length > 0) {
+          setExistingSub({
+            ...subRes.data[0],
+            fileName: subRes.data[0].file_path ? subRes.data[0].file_path.split('/').pop() : 'Submission',
+            submittedAt: new Date().toISOString(), // DB has created_at maybe, simplifying
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load assignment', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id && currentUser?.id) {
+      fetchDetails();
+    }
+  }, [id, currentUser?.id]);
+
+  if (loading) {
+    return <div className="p-10 text-center text-gray-500">Loading...</div>;
+  }
 
   if (!assignment) {
     return (
@@ -103,26 +142,32 @@ export default function SubmitAssignment() {
     if (mode === 'paste' && !textContent.trim()) { toast.error('Please enter your submission content.'); return; }
 
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1200));
 
-    const fileName = mode === 'paste' ? `submission_${currentUser?.name?.replace(/\s/g, '_')}.txt` : file!.name;
-    const fileType = fileName.split('.').pop() ?? 'txt';
-    const content = mode === 'paste' ? textContent : (textContent || `[${fileType.toUpperCase()} file: content extraction requires server-side processing]`);
+    try {
+      const formData = new FormData();
+      formData.append('assignment_id', id ?? '');
+      formData.append('student_id', currentUser?.id ?? '');
 
-    const sub: Submission = {
-      id: `sub-${Date.now()}-${currentUser?.id}`,
-      assignmentId: id ?? '',
-      studentId: currentUser?.id ?? '',
-      fileName,
-      fileType,
-      content: content.slice(0, 8000),
-      submittedAt: new Date().toISOString(),
-    };
+      if (mode === 'file' && file) {
+        formData.append('file', file);
+      } else if (mode === 'paste') {
+        const blob = new Blob([textContent], { type: 'text/plain' });
+        const fileName = `submission_${currentUser?.name?.replace(/\s/g, '_') || 'student'}.txt`;
+        formData.append('file', blob, fileName);
+      }
 
-    addSubmission(sub);
-    setSubmitting(false);
-    setDone(true);
-    toast.success('Assignment submitted successfully!');
+      await api.post('/submissions/submit', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setDone(true);
+      toast.success('Assignment submitted successfully!');
+    } catch (error) {
+      console.error('Submission failed', error);
+      toast.error('Failed to submit assignment. Ensure your file size < 25MB and format is allowed (.pdf, .txt, .jpg).');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (done) {
