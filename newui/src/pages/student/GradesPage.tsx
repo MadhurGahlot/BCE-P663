@@ -33,8 +33,8 @@ export default function GradesPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">My Grades</h1>
-        <p className="text-slate-500 text-sm mt-0.5">{gradedSubs.length} graded submission{gradedSubs.length !== 1 ? 's' : ''}</p>
+        <h1 className="text-2xl font-bold text-gray-900">My Grades</h1>
+        <p className="text-gray-500 text-sm mt-0.5">{gradedSubs.length} graded submission{gradedSubs.length !== 1 ? 's' : ''}</p>
       </div>
 
       {/* Stats */}
@@ -45,19 +45,19 @@ export default function GradesPage() {
           { label: 'Pending', value: mySubmissions.length - gradedSubs.length, color: 'text-yellow-600', bg: 'bg-yellow-50', icon: Clock },
           { label: 'Average', value: avg ? `${avg}%` : '—', color: 'text-purple-600', bg: 'bg-purple-50', icon: Award },
         ].map(({ label, value, color, bg, icon: Icon }) => (
-          <div key={label} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm text-center">
+          <div key={label} className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm text-center">
             <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mx-auto mb-2`}>
               <Icon size={20} className={color} />
             </div>
             <div className={`text-2xl font-bold ${color}`}>{value}</div>
-            <div className="text-xs text-slate-500 mt-0.5">{label}</div>
+            <div className="text-xs text-gray-500 mt-0.5">{label}</div>
           </div>
         ))}
       </div>
 
       {gradeData.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <h2 className="font-semibold text-slate-800 mb-5">Grade Trend</h2>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          <h2 className="font-semibold text-gray-800 mb-5">Grade Trend</h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={gradeData} margin={{ bottom: 30 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -77,19 +77,19 @@ export default function GradesPage() {
       {/* Grade List */}
       <div className="space-y-3">
         {mySubmissions.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-            <Award size={40} className="mx-auto mb-3 text-slate-300" />
-            <div className="text-slate-500 font-medium">No submissions yet</div>
+          <div className="text-center py-12 bg-white rounded-2xl border border-gray-200">
+            <Award size={40} className="mx-auto mb-3 text-gray-300" />
+            <div className="text-gray-500 font-medium">No submissions yet</div>
           </div>
         ) : (
           mySubmissions.map(sub => {
             const assign = assignments.find(a => a.id === sub.assignmentId);
             const pct = sub.grade !== undefined && assign ? ((sub.grade / assign.totalMarks) * 100) : null;
-            const color = pct !== null ? (pct >= 75 ? 'text-green-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-600') : 'text-slate-400';
-            const gradient = pct !== null ? (pct >= 75 ? 'from-green-500 to-teal-500' : pct >= 50 ? 'from-yellow-500 to-orange-500' : 'from-red-500 to-rose-500') : 'from-slate-300 to-slate-400';
+            const color = pct !== null ? (pct >= 75 ? 'text-green-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-600') : 'text-gray-400';
+            const gradient = pct !== null ? (pct >= 75 ? 'from-green-500 to-teal-500' : pct >= 50 ? 'from-yellow-500 to-orange-500' : 'from-red-500 to-rose-500') : 'from-gray-300 to-gray-400';
 
             return (
-              <div key={sub.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4 flex-wrap">
+              <div key={sub.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center gap-4 flex-wrap">
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
                   {pct !== null ? (
                     <span className="text-white font-bold text-xs">{Math.round(pct)}%</span>
@@ -98,21 +98,21 @@ export default function GradesPage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-slate-800">{assign?.title ?? sub.assignmentId}</div>
-                  <div className="text-xs text-slate-400 mt-0.5 flex gap-3 flex-wrap">
+                  <div className="font-semibold text-gray-800">{assign?.title ?? sub.assignmentId}</div>
+                  <div className="text-xs text-gray-400 mt-0.5 flex gap-3 flex-wrap">
                     <span>{assign?.subject}</span>
                     <span>Submitted: {new Date(sub.submittedAt).toLocaleDateString()}</span>
                     <span>{sub.fileName}</span>
                   </div>
                   {sub.feedback && (
-                    <p className="text-xs text-slate-500 mt-1 italic line-clamp-1">"{sub.feedback}"</p>
+                    <p className="text-xs text-gray-500 mt-1 italic line-clamp-1">"{sub.feedback}"</p>
                   )}
                 </div>
                 {sub.grade !== undefined ? (
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <div className={`text-xl font-bold ${color}`}>{sub.grade}</div>
-                      <div className="text-xs text-slate-400">/{assign?.totalMarks}</div>
+                      <div className="text-xs text-gray-400">/{assign?.totalMarks}</div>
                     </div>
                     <Link
                       to={`/student/grades/${sub.id}`}
@@ -132,3 +132,4 @@ export default function GradesPage() {
     </div>
   );
 }
+

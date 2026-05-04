@@ -60,8 +60,8 @@ export default function TeacherDashboard() {
       {/* Welcome */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Welcome, {currentUser?.name?.split(' ')[1] ?? currentUser?.name}! 👋</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Here's your academic integrity overview</p>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome, {currentUser?.name?.split(' ')[1] ?? currentUser?.name}! 👋</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Here's your academic integrity overview</p>
         </div>
         <Link
           to="/teacher/assignments/new"
@@ -74,22 +74,22 @@ export default function TeacherDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map(({ label, value, icon: Icon, textColor, bg }) => (
-          <div key={label} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <div key={label} className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
             <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mb-3`}>
               <Icon size={20} className={textColor} />
             </div>
             <div className={`text-2xl font-bold ${textColor}`}>{value}</div>
-            <div className="text-slate-500 text-xs mt-0.5">{label}</div>
+            <div className="text-gray-500 text-xs mt-0.5">{label}</div>
           </div>
         ))}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="font-semibold text-slate-800">Submissions Overview</h2>
-            <Activity size={18} className="text-slate-400" />
+            <h2 className="font-semibold text-gray-800">Submissions Overview</h2>
+            <Activity size={18} className="text-gray-400" />
           </div>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
@@ -105,24 +105,24 @@ export default function TeacherDashboard() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-48 flex items-center justify-center text-slate-400 text-sm">No data yet</div>
+            <div className="h-48 flex items-center justify-center text-gray-400 text-sm">No data yet</div>
           )}
           <div className="flex gap-4 mt-2">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500"><span className="w-3 h-3 rounded-sm bg-green-500 inline-block"></span> Graded</div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500"><span className="w-3 h-3 rounded-sm bg-yellow-500 inline-block"></span> Pending</div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500"><span className="w-3 h-3 rounded-sm bg-green-500 inline-block"></span> Graded</div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500"><span className="w-3 h-3 rounded-sm bg-yellow-500 inline-block"></span> Pending</div>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-            <h2 className="font-semibold text-slate-800 mb-4">Quick Actions</h2>
+          <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+            <h2 className="font-semibold text-gray-800 mb-4">Quick Actions</h2>
             <div className="space-y-2">
               <Link to="/teacher/assignments/new" className="flex items-center justify-between w-full p-3 bg-blue-50 hover:bg-blue-100 rounded-xl text-sm text-blue-700 font-medium transition-colors">
                 <div className="flex items-center gap-2"><Plus size={16} /> Create Assignment</div>
                 <ArrowRight size={14} />
               </Link>
-              <Link to="/teacher/assignments" className="flex items-center justify-between w-full p-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-sm text-slate-700 font-medium transition-colors">
+              <Link to="/teacher/assignments" className="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-xl text-sm text-gray-700 font-medium transition-colors">
                 <div className="flex items-center gap-2"><BookOpen size={16} /> View All Assignments</div>
                 <ArrowRight size={14} />
               </Link>
@@ -130,8 +130,8 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Deadline Tracker */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-            <h2 className="font-semibold text-slate-800 mb-3">Upcoming Deadlines</h2>
+          <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+            <h2 className="font-semibold text-gray-800 mb-3">Upcoming Deadlines</h2>
             <div className="space-y-2">
               {assignments
                 .filter(a => new Date(a.deadline) >= new Date())
@@ -140,10 +140,10 @@ export default function TeacherDashboard() {
                 .map(a => {
                   const daysLeft = Math.ceil((new Date(a.deadline).getTime() - Date.now()) / 86400000);
                   return (
-                    <Link key={a.id} to={`/teacher/assignments/${a.id}`} className="flex items-center justify-between p-2.5 hover:bg-slate-50 rounded-lg transition-colors group">
+                    <Link key={a.id} to={`/teacher/assignments/${a.id}`} className="flex items-center justify-between p-2.5 hover:bg-gray-50 rounded-lg transition-colors group">
                       <div>
-                        <div className="text-xs font-medium text-slate-700 group-hover:text-blue-600 transition-colors">{a.title}</div>
-                        <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5"><Clock size={10} />{a.deadline}</div>
+                        <div className="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors">{a.title}</div>
+                        <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5"><Clock size={10} />{a.deadline}</div>
                       </div>
                       <div className={`text-xs font-medium px-2 py-0.5 rounded-full ${daysLeft <= 3 ? 'bg-red-100 text-red-600' : daysLeft <= 7 ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600'}`}>
                         {daysLeft}d
@@ -158,9 +158,9 @@ export default function TeacherDashboard() {
 
       {/* Flagged Pairs */}
       {flaggedPairs.length > 0 && (
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
               <AlertTriangle size={18} className="text-red-500" />
               Flagged Similarity Pairs
             </h2>
@@ -168,16 +168,16 @@ export default function TeacherDashboard() {
           </div>
           <div className="space-y-2">
             {flaggedPairs.slice(0, 5).map((pair, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-xs font-bold text-slate-600">{pair.s1Name.charAt(0)}</div>
+                    <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-600">{pair.s1Name.charAt(0)}</div>
                     <TrendingUp size={14} className="text-red-500" />
-                    <div className="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-xs font-bold text-slate-600">{pair.s2Name.charAt(0)}</div>
+                    <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-600">{pair.s2Name.charAt(0)}</div>
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-slate-700">{pair.s1Name} ↔ {pair.s2Name}</div>
-                    <div className="text-xs text-slate-400">{pair.assignTitle}</div>
+                    <div className="text-sm font-medium text-gray-700">{pair.s1Name} ↔ {pair.s2Name}</div>
+                    <div className="text-xs text-gray-400">{pair.assignTitle}</div>
                   </div>
                 </div>
                 <div className={`text-xs font-semibold px-3 py-1 rounded-full border ${getSimilarityBg(pair.similarity)}`}>
@@ -190,9 +190,9 @@ export default function TeacherDashboard() {
       )}
 
       {/* Assignments Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-800">My Assignments</h2>
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-800">My Assignments</h2>
           <Link to="/teacher/assignments" className="text-blue-600 text-sm hover:underline flex items-center gap-1">
             View all <ArrowRight size={14} />
           </Link>
@@ -200,12 +200,12 @@ export default function TeacherDashboard() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Assignment</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Subject</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Deadline</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Submissions</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Assignment</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Deadline</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Submissions</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -215,21 +215,21 @@ export default function TeacherDashboard() {
                 const graded = subs.filter(s => s.grade !== undefined).length;
                 const isPast = new Date(a.deadline) < new Date();
                 return (
-                  <tr key={a.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                  <tr key={a.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-slate-800 text-sm">{a.title}</div>
-                      <div className="text-xs text-slate-400">{a.totalMarks} marks</div>
+                      <div className="font-medium text-gray-800 text-sm">{a.title}</div>
+                      <div className="text-xs text-gray-400">{a.totalMarks} marks</div>
                     </td>
                     <td className="px-4 py-4">
                       <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-700">{a.subject}</span>
                     </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">{a.deadline}</td>
+                    <td className="px-4 py-4 text-sm text-gray-600">{a.deadline}</td>
                     <td className="px-4 py-4">
-                      <div className="text-sm text-slate-700">{subs.length} submitted</div>
-                      <div className="text-xs text-slate-400">{graded} graded</div>
+                      <div className="text-sm text-gray-700">{subs.length} submitted</div>
+                      <div className="text-xs text-gray-400">{graded} graded</div>
                     </td>
                     <td className="px-4 py-4">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${isPast ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-700'}`}>
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${isPast ? 'bg-gray-100 text-gray-600' : 'bg-green-100 text-green-700'}`}>
                         {isPast ? 'Closed' : 'Active'}
                       </span>
                     </td>
@@ -244,7 +244,7 @@ export default function TeacherDashboard() {
             </tbody>
           </table>
           {assignments.length === 0 && (
-            <div className="py-12 text-center text-slate-400 text-sm">No assignments yet. <Link to="/teacher/assignments/new" className="text-blue-600 hover:underline">Create one</Link></div>
+            <div className="py-12 text-center text-gray-400 text-sm">No assignments yet. <Link to="/teacher/assignments/new" className="text-blue-600 hover:underline">Create one</Link></div>
           )}
         </div>
       </div>
