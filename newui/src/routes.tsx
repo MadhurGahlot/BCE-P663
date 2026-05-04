@@ -3,6 +3,7 @@ import RootLayout from './components/RootLayout';
 import { TeacherLayout } from './components/TeacherLayout';
 import { StudentLayout } from './components/StudentLayout';
 import Login from './pages/Login';
+import SignUp from './pages/SignIn';
 import Landing from './pages/landing';
 import TeacherDashboard from './pages/teacher/Dashboard';
 import Assignments from './pages/teacher/Assignments';
@@ -16,6 +17,9 @@ import StudentDashboard from './pages/student/Dashboard';
 import SubmitAssignment from './pages/student/SubmitAssignment';
 import ViewGrade from './pages/student/ViewGrade';
 import GradesPage from './pages/student/GradesPage';
+import Profile from './pages/Profile';
+
+import StudentAnalytics from './pages/teacher/StudentAnalytics';
 
 export const router = createBrowserRouter([
   {
@@ -23,6 +27,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <Landing /> },
       { path: '/login', element: <Login /> },
+      { path: '/signup', element: <SignUp /> },
       {
         path: '/teacher',
         element: <TeacherLayout />,
@@ -34,7 +39,9 @@ export const router = createBrowserRouter([
           { path: 'assignments/:id/similarity', element: <SimilarityReport /> },
           { path: 'assignments/:id/grade', element: <Grading /> },
           { path: 'students', element: <StudentsPage /> },
+          { path: 'students/:id/analytics', element: <StudentAnalytics /> },
           { path: 'reports', element: <ReportsPage /> },
+          { path: 'profile', element: <Profile /> },
         ],
       },
       {
@@ -45,6 +52,7 @@ export const router = createBrowserRouter([
           { path: 'submit/:id', element: <SubmitAssignment /> },
           { path: 'grades', element: <GradesPage /> },
           { path: 'grades/:subId', element: <ViewGrade /> },
+          { path: 'profile', element: <Profile /> },
         ],
       },
       { path: '*', element: <Navigate to="/" replace /> },

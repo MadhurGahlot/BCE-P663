@@ -13,8 +13,15 @@ interface AppState {
   isLoading: boolean;
 }
 
+interface RegisterResult {
+  success: boolean;
+  user?: User;
+  error?: string;
+}
+
 interface AppContextType extends AppState {
   login: (token: string, user: User) => void;
+  register: (name: string, email: string, password: string, role: 'teacher' | 'student', department: string) => Promise<RegisterResult>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 
@@ -101,6 +108,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState({ currentUser: user, isLoading: false });
   }, []);
 
+  const register = useCallback(async (name: string, email: string, password: string, role: 'teacher' | 'student', department: string): Promise<RegisterResult> => {
+    try {
+      // 1. Register the user via backend API
+      await api.post('/auth/register', { name, email, password, role, department });
+
+      // 2. Auto-login after successful registration
+      const params = new URLSearchParams();
+      params.append('username', email);
+      params.append('password', password);
+
+      const loginRes = await api.post('/auth/login', params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+
+      const token = loginRes.data.access_token;
+      localStorage.setItem('token', token);
+
+      // 3. Fetch the full user object
+      const userRes = await api.get('/auth/me');
+      const user = userRes.data;
+
+      setState({ currentUser: user, isLoading: false });
+      return { success: true, user };
+    } catch (err: any) {
+      const message = err.response?.data?.detail || 'Registration failed. Please try again.';
+      return { success: false, error: message };
+    }
+  }, []);
+
   // ✅ LOGOUT
   const logout = useCallback(() => {
     localStorage.removeItem('token');
@@ -108,12 +144,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AppContext.Provider
-      value={{
-        ...state,
-        login,
-        logout,
-        checkAuth,
+    <AppContext.Provider value={{
+      ...state,
+      login,
+      logout,
+      checkAuth,
 
         // ✅ REAL DATA
         submissions,

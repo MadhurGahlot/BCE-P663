@@ -1,78 +1,59 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { BookOpenCheck, Eye, EyeOff, AlertCircle, BookOpen, Users } from 'lucide-react';
+import { BookOpenCheck, Eye, EyeOff, AlertCircle, CheckCircle2, UserPlus } from 'lucide-react';
 import { useApp } from '../store/AppContext';
-import api from '../services/api';
 
-const DEMO_TEACHERS = [
-  { name: 'Prof. Arjun Sharma', email: 'sharma@uni.edu', dept: 'CSE' },
-  { name: 'Prof. Priya Mehta', email: 'mehta@uni.edu', dept: 'EE' },
-  { name: 'Prof. Rajesh Patel', email: 'patel@uni.edu', dept: 'ME' },
-];
+const DEPARTMENTS = ['CSE', 'EE', 'ME', 'ECE'];
 
-const DEMO_STUDENTS = [
-  { name: 'Rahul Verma', email: 'rahul@student.edu', dept: 'CSE' },
-  { name: 'Priya Singh', email: 'priya@student.edu', dept: 'CSE' },
-  { name: 'Anita Gupta', email: 'anita@student.edu', dept: 'CSE' },
-];
-
-export default function Login() {
-  const { login } = useApp();
+export default function SignUp() {
+  const { register } = useApp();
   const navigate = useNavigate();
   const [tab, setTab] = useState<'teacher' | 'student'>('teacher');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [department, setDepartment] = useState('CSE');
   const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const params = new URLSearchParams();
-      params.append('username', email);
-      params.append('password', password);
+      const result = await register(name, email, password, tab, department);
 
-      const loginRes = await api.post('/auth/login', params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
-
-      const token = loginRes.data.access_token;
-      // Temporarily store token so /auth/me can use it (api service interceptor reads from localStorage)
-      localStorage.setItem('token', token);
-
-      const userRes = await api.get('/auth/me');
-      const user = userRes.data;
-
-      login(token, user);
-
-      if (user.role === 'teacher') {
-        navigate('/teacher');
+      if (result.success && result.user) {
+        if (result.user.role === 'teacher') navigate('/teacher');
+        else navigate('/student');
       } else {
-        navigate('/student');
+        setError(result.error || 'Registration failed');
       }
-    } catch (err) {
-      console.error(err);
-      setError('Invalid email or password. Please try again.');
+    } catch {
+      setError('Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const fillDemo = (demoEmail: string, pwd: string) => {
-    setEmail(demoEmail);
-    setPassword(pwd);
-    setError('');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
-      {/* Header — matches landing */}
+      {/* Header — matches landing & login */}
       <header className="border-b border-gray-200 bg-white sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
@@ -106,24 +87,25 @@ export default function Login() {
                 </div>
               </div>
               <h2 className="text-3xl font-bold text-white mb-4 leading-snug">
-                Smart Plagiarism Detection & Grading
+                Join Our Community
               </h2>
-              <p className="text-blue-100 text-sm leading-relaxed">
-                Empowering educators with AI-assisted similarity detection, automated grading rubrics, and comprehensive reporting for engineering assignments.
+              <p className="text-blue-100 text-sm leading-relaxed mb-8">
+                Create your account to start managing assignments, detecting plagiarism, and streamlining your grading workflow.
               </p>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { icon: BookOpen, label: 'Assignments', value: '3 Active' },
-                { icon: Users, label: 'Students', value: '10 Enrolled' },
-              ].map(({ icon: Icon, label, value }) => (
-                <div key={label} className="bg-white/10 rounded-xl p-4">
-                  <Icon size={20} className="text-blue-200 mb-2" />
-                  <div className="text-white font-semibold">{value}</div>
-                  <div className="text-blue-200 text-xs">{label}</div>
-                </div>
-              ))}
+              <div className="space-y-3">
+                {[
+                  'Advanced plagiarism detection',
+                  'Automated grading tools',
+                  'Comprehensive reporting',
+                  'Easy submission management',
+                ].map((feature, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-blue-300" />
+                    <span className="text-blue-100 text-sm">{feature}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -137,15 +119,15 @@ export default function Login() {
               <span className="font-bold text-gray-900 text-lg">GradeBook</span>
             </div>
 
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Sign in</h1>
-            <p className="text-gray-500 text-sm mb-6">Select your role and enter credentials</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Create Account</h1>
+            <p className="text-gray-500 text-sm mb-6">Select your role and fill in your details</p>
 
             {/* Role Tabs */}
             <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
               {(['teacher', 'student'] as const).map(role => (
                 <button
                   key={role}
-                  onClick={() => { setTab(role); setError(''); setEmail(''); setPassword(''); }}
+                  onClick={() => { setTab(role); setError(''); }}
                   className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${tab === role ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                   {role === 'teacher' ? '👨‍🏫 Teacher' : '👨‍🎓 Student'}
@@ -156,16 +138,43 @@ export default function Login() {
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder={tab === 'teacher' ? 'Prof. John Doe' : 'John Doe'}
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder={tab === 'teacher' ? 'sharma@uni.edu' : 'rahul@student.edu'}
+                  placeholder={tab === 'teacher' ? 'professor@university.edu' : 'student@university.edu'}
                   required
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
+                <select
+                  value={department}
+                  onChange={e => setDepartment(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition"
+                >
+                  {DEPARTMENTS.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
                 <div className="relative">
@@ -175,10 +184,29 @@ export default function Login() {
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
+                    minLength={6}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm pr-10"
                   />
                   <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                     {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">At least 6 characters</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPwd ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm pr-10"
+                  />
+                  <button type="button" onClick={() => setShowConfirmPwd(!showConfirmPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    {showConfirmPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
@@ -198,41 +226,23 @@ export default function Login() {
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Signing in...
+                    Creating Account...
                   </>
-                ) : 'Sign In'}
+                ) : (
+                  <>
+                    <UserPlus size={16} />
+                    Create Account
+                  </>
+                )}
               </button>
             </form>
 
-            {/* Demo Credentials */}
-            <div className="mt-6">
-              <div className="text-xs font-medium text-gray-500 mb-2 text-center">
-                — Demo {tab === 'teacher' ? 'Teacher' : 'Student'} Accounts —
-              </div>
-              <div className="space-y-1.5">
-                {(tab === 'teacher' ? DEMO_TEACHERS : DEMO_STUDENTS).map(d => (
-                  <button
-                    key={d.email}
-                    onClick={() => fillDemo(d.email, tab === 'teacher' ? 'teacher123' : 'student123')}
-                    className="w-full text-left flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 transition-colors group"
-                  >
-                    <div>
-                      <div className="text-xs font-medium text-gray-700 group-hover:text-blue-700">{d.name}</div>
-                      <div className="text-xs text-gray-400">{d.email}</div>
-                    </div>
-                    <div className="text-xs bg-gray-200 group-hover:bg-blue-200 text-gray-600 group-hover:text-blue-700 px-2 py-0.5 rounded-full font-medium">{d.dept}</div>
-                  </button>
-                ))}
-                <div className="text-center text-xs text-gray-400 pt-1">Password: <span className="font-mono bg-gray-100 px-1 rounded">{tab === 'teacher' ? 'teacher123' : 'student123'}</span></div>
-              </div>
-            </div>
-
-            {/* Sign Up Link */}
+            {/* Sign In Link */}
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
-                <Link to="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Sign Up
+                Already have an account?{' '}
+                <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+                  Sign In
                 </Link>
               </p>
             </div>

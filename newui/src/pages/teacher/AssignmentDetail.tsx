@@ -2,8 +2,9 @@ import React, { useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import {
   ArrowLeft, Upload, FileText, Users, BarChart3, Award,
-  Clock, AlertTriangle, CheckCircle, Eye, Trash2, Download, Plus
+  Clock, AlertTriangle, CheckCircle, Eye, Trash2, Download, Plus, Settings, Edit2
 } from 'lucide-react';
+import api from '../../services/api';
 import { useApp } from '../../store/AppContext';
 import { getSimilarityBg, getSimilarityLabel } from '../../store/similarity';
 import type { Submission } from '../../store/types';
@@ -15,6 +16,10 @@ export default function AssignmentDetail() {
   const { getAssignmentById, getSubmissionsForAssignment, users, addSubmission, runSimilarityCheck, getSimilarityResult } = useApp();
   const [checking, setChecking] = useState(false);
   const [viewContent, setViewContent] = useState<Submission | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSettingRules, setIsSettingRules] = useState(false);
+  const [editData, setEditData] = useState<any>({});
+  const [rulesData, setRulesData] = useState({ low: 20, high: 60, marks_low: 0, marks_medium: 10, marks_high: 20 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const assignment = getAssignmentById(id ?? '');
@@ -43,6 +48,31 @@ export default function AssignmentDetail() {
     runSimilarityCheck(id ?? '');
     setChecking(false);
     toast.success('Similarity check complete!');
+  };
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.put(`/assignments/${id}`, editData);
+      toast.success('Assignment updated successfully.');
+      setIsEditing(false);
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update assignment.');
+    }
+  };
+
+  const handleRulesSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post(`/grading/set/${id}?low=${rulesData.low}&high=${rulesData.high}&marks_low=${rulesData.marks_low}&marks_medium=${rulesData.marks_medium}&marks_high=${rulesData.marks_high}`);
+      toast.success('Grading rules saved successfully.');
+      setIsSettingRules(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save rules.');
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,6 +140,12 @@ export default function AssignmentDetail() {
           <p className="text-gray-500 text-sm mt-1">{assignment.description}</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
+          <button onClick={() => { setEditData({ title: assignment.title, deadline: assignment.deadline, total_marks: assignment.totalMarks, subject: assignment.subject, department: assignment.department }); setIsEditing(true); }} className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-medium transition-colors border border-gray-200">
+            <Edit2 size={14} /> Edit
+          </button>
+          <button onClick={() => setIsSettingRules(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-medium transition-colors border border-gray-200">
+            <Settings size={14} /> Rules
+          </button>
           <Link to={`/teacher/assignments/${id}/similarity`} className="flex items-center gap-1.5 px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl text-xs font-medium transition-colors">
             <BarChart3 size={14} /> Similarity
           </Link>
@@ -353,6 +389,70 @@ export default function AssignmentDetail() {
               <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono leading-relaxed">{viewContent.content}</pre>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {isEditing && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleEditSave} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h2 className="text-lg font-bold mb-4">Edit Assignment</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input type="text" value={editData.title || ''} onChange={e => setEditData({...editData, title: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Total Marks</label>
+                <input type="number" value={editData.total_marks || ''} onChange={e => setEditData({...editData, total_marks: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                <input type="datetime-local" value={editData.deadline || ''} onChange={e => setEditData({...editData, deadline: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Rules Modal */}
+      {isSettingRules && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleRulesSave} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h2 className="text-lg font-bold mb-4">Grading Rules (Plagiarism Penalty)</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Low % (e.g. 20)</label>
+                  <input type="number" value={rulesData.low} onChange={e => setRulesData({...rulesData, low: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">High % (e.g. 60)</label>
+                  <input type="number" value={rulesData.high} onChange={e => setRulesData({...rulesData, high: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" required />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Penalty for {`<`} Low % (Marks Deducted)</label>
+                <input type="number" value={rulesData.marks_low} onChange={e => setRulesData({...rulesData, marks_low: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Penalty for Low-High % (Marks Deducted)</label>
+                <input type="number" value={rulesData.marks_medium} onChange={e => setRulesData({...rulesData, marks_medium: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Penalty for {`>`} High % (Marks Deducted)</label>
+                <input type="number" value={rulesData.marks_high} onChange={e => setRulesData({...rulesData, marks_high: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" required />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => setIsSettingRules(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Rules</button>
+            </div>
+          </form>
         </div>
       )}
     </div>

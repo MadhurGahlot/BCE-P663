@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router';
-import { Search, User, BookOpen, Award, AlertTriangle } from 'lucide-react';
+import { Search, User, BookOpen, Award, AlertTriangle, BarChart3 } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
 
 export default function StudentsPage() {
@@ -75,7 +75,7 @@ export default function StudentsPage() {
               </div>
 
               {submissions.length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-1 mb-3">
                   {submissions.slice(0, 2).map(sub => {
                     const assign = getAssignmentById(sub.assignmentId);
                     return (
@@ -95,6 +95,12 @@ export default function StudentsPage() {
                   })}
                 </div>
               )}
+              <Link
+                to={`/teacher/students/${student.id}/analytics`}
+                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium transition-colors"
+              >
+                <BarChart3 size={14} /> View Analytics
+              </Link>
             </div>
           );
         })}

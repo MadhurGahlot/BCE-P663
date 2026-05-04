@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router';
-import { Plus, Search, Filter, BookOpen, Clock, ChevronRight, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Filter, BookOpen, Clock, ChevronRight, FileText, CheckCircle, AlertTriangle, Trash2 } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
 import api from '../../services/api';
 
@@ -57,6 +57,18 @@ export default function Assignments() {
       (filterStatus === 'CLOSED' && isPast);
     return matchSearch && matchSubject && matchStatus;
   });
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this assignment? This cannot be undone.")) {
+      try {
+        await api.delete(`/assignments/${id}`);
+        setAssignments(assignments.filter(a => a.id !== id));
+      } catch (err) {
+        console.error("Failed to delete assignment", err);
+        alert("Failed to delete assignment.");
+      }
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -138,6 +150,9 @@ export default function Assignments() {
                     </div>
                     <h3 className="font-semibold text-gray-800 text-sm leading-snug">{a.title}</h3>
                   </div>
+                  <button onClick={() => handleDelete(a.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0" title="Delete Assignment">
+                    <Trash2 size={16} />
+                  </button>
                 </div>
 
                 <p className="text-xs text-gray-500 mb-4 line-clamp-2">{a.description}</p>
