@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { BookOpenCheck, Eye, EyeOff, AlertCircle, BookOpen, Users } from 'lucide-react';
 import { useApp } from '../store/AppContext';
+import api from '../services/api';
 
 const DEMO_TEACHERS = [
   { name: 'Prof. Arjun Sharma', email: 'sharma@uni.edu', dept: 'CSE' },
@@ -29,14 +30,37 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    const user = login(email, password);
-    setLoading(false);
-    if (user) {
-      if (user.role === 'teacher') navigate('/teacher');
-      else navigate('/student');
-    } else {
-      setError('Invalid email or password. Try the demo credentials below.');
+
+    try {
+      const params = new URLSearchParams();
+      params.append('username', email);
+      params.append('password', password);
+
+      const loginRes = await api.post('/auth/login', params, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+
+      const token = loginRes.data.access_token;
+      // Temporarily store token so /auth/me can use it (api service interceptor reads from localStorage)
+      localStorage.setItem('token', token);
+
+      const userRes = await api.get('/auth/me');
+      const user = userRes.data;
+
+      login(token, user);
+
+      if (user.role === 'teacher') {
+        navigate('/teacher');
+      } else {
+        navigate('/student');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Invalid email or password. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 

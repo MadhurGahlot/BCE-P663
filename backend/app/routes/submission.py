@@ -10,8 +10,9 @@ from app.models.similarity import Similarity
 from app.models.submission import Submission
 from app.services.ocr_service import process_pdf_with_sarvam
 from app.services.similarity_service import calculate_similarity
+from app.routes.auth import get_current_user
 
-router = APIRouter()
+router = APIRouter(prefix="/submissions", tags=["Submissions"])
 
 UPLOAD_DIR = Path("backend/uploads/submissions")
 MAX_UPLOAD_SIZE = 25 * 1024 * 1024
@@ -113,3 +114,23 @@ def upload_submission(
         "submission_id": new_submission.id,
         "similarities": results,
     }
+
+
+@router.get("/assignment/{assignment_id}")
+def get_submissions_for_assignment(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    # Depending on role, return all or just the current user's
+    if current_user.role == "teacher":
+        submissions = db.query(Submission).filter(Submission.assignment_id == assignment_id).all()
+        return submissions
+    else:
+        # Students only see their own
+        submissions = db.query(Submission).filter(
+            Submission.assignment_id == assignment_id, 
+            Submission.student_id == current_user.id
+        ).all()
+        return submissions
+

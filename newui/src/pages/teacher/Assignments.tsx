@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router';
 import { Plus, Search, Filter, BookOpen, Clock, ChevronRight, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
+import api from '../../services/api';
 
 const DEPT_COLORS: Record<string, string> = {
   CSE: 'bg-blue-100 text-blue-700',
@@ -11,11 +12,40 @@ const DEPT_COLORS: Record<string, string> = {
 };
 
 export default function Assignments() {
-  const { currentUser, getTeacherAssignments, getSubmissionsForAssignment, getSimilarityResult } = useApp();
-  const assignments = getTeacherAssignments(currentUser?.id ?? '');
+  const { currentUser } = useApp();
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterSubject, setFilterSubject] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
+
+  React.useEffect(() => {
+    const fetchAssignments = async () => {
+      try {
+        const response = await api.get('/assignments/');
+        // The backend returns assignments for all. If we only want the current teacher's:
+        const teacherAssignments = response.data.filter((a: any) => a.created_by === currentUser?.id);
+
+        // Map backend fields to frontend expected fields where they miss
+        const mapped = teacherAssignments.map((a: any) => ({
+          ...a,
+          id: a.id.toString(),
+          totalMarks: a.total_marks,
+          description: a.description || `Assignment for ${a.department} department`,
+          deadline: new Date(a.deadline).toLocaleDateString(),
+        }));
+
+        setAssignments(mapped);
+      } catch (err) {
+        console.error('Failed to fetch assignments', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (currentUser?.id) {
+      fetchAssignments();
+    }
+  }, [currentUser?.id]);
 
   const filtered = assignments.filter(a => {
     const matchSearch = a.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -34,7 +64,11 @@ export default function Assignments() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Assignments</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{assignments.length} total assignments</p>
+          {loading ? (
+            <p className="text-gray-500 text-sm mt-0.5">Loading...</p>
+          ) : (
+            <p className="text-gray-500 text-sm mt-0.5">{assignments.length} total assignments</p>
+          )}
         </div>
         <Link
           to="/teacher/assignments/new"
@@ -81,12 +115,14 @@ export default function Assignments() {
       {/* Cards Grid */}
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
         {filtered.map(a => {
-          const subs = getSubmissionsForAssignment(a.id);
-          const graded = subs.filter(s => s.grade !== undefined).length;
-          const highSim = subs.filter(s => (s.maxSimilarity ?? 0) >= 0.6).length;
-          const simResult = getSimilarityResult(a.id);
-          const isPast = new Date(a.deadline) < new Date();
+          // TODO: Fetch real stats from backend when endpoints are ready
+          const subs: any[] = [];
+          const graded = 0;
+          const highSim = 0;
+          const simResult = null;
+
           const daysLeft = Math.ceil((new Date(a.deadline).getTime() - Date.now()) / 86400000);
+          const isPast = daysLeft < 0;
 
           return (
             <div key={a.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">

@@ -50,6 +50,8 @@ def compare_submissions(
             sim_percent = round(sim_score * 100, 2)
             
             results.append({
+                "submissionid1": submissions[i].id,
+                "submissionid2": submissions[j].id,
                 "studentid1": submissions[i].student_id,
                 "studentid2": submissions[j].student_id,
                 "similarityscore": sim_percent,

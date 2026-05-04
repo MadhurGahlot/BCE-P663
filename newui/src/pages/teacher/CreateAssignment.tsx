@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Plus, Trash2, ArrowLeft, BookOpen, CheckCircle } from 'lucide-react';
-import { useApp } from '../../store/AppContext';
 import type { Assignment, RubricItem, Department } from '../../store/types';
+import api from '../../services/api';
 
 const DEPARTMENTS: Department[] = ['CSE', 'EE', 'ME', 'ECE'];
 const FILE_TYPES_BY_DEPT: Record<Department, string[]> = {
@@ -13,9 +13,9 @@ const FILE_TYPES_BY_DEPT: Record<Department, string[]> = {
 };
 
 export default function CreateAssignment() {
-  const { currentUser, addAssignment } = useApp();
   const navigate = useNavigate();
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
@@ -43,19 +43,29 @@ export default function CreateAssignment() {
     setRubric(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const assignment: Assignment = {
-      id: `assign-${Date.now()}`,
-      ...form,
-      teacherId: currentUser?.id ?? '',
-      createdAt: new Date().toISOString().split('T')[0],
-      rubric: rubric.filter(r => r.criterion.trim()),
-      allowedFileTypes: FILE_TYPES_BY_DEPT[form.subject],
-    };
-    addAssignment(assignment);
-    setSaved(true);
-    setTimeout(() => navigate('/teacher/assignments'), 1500);
+    setLoading(true);
+
+    try {
+      const payload = {
+        title: form.title,
+        subject: form.subject,
+        department: form.subject,
+        deadline: new Date(form.deadline).toISOString(),
+        total_marks: form.totalMarks,
+      };
+
+      await api.post('/assignments/', payload);
+
+      setSaved(true);
+      setTimeout(() => navigate('/teacher/assignments'), 1500);
+    } catch (err) {
+      console.error('Error creating assignment', err);
+      alert('Failed to create assignment');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (saved) {
@@ -250,9 +260,10 @@ export default function CreateAssignment() {
           </button>
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors flex items-center gap-2"
+            disabled={loading}
+            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium transition-colors flex items-center gap-2"
           >
-            <Plus size={16} /> Create Assignment
+            {loading ? 'Creating...' : <><Plus size={16} /> Create Assignment</>}
           </button>
         </div>
       </form>
