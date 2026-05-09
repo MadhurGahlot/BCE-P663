@@ -3,7 +3,7 @@ import RootLayout from './components/RootLayout';
 import { TeacherLayout } from './components/TeacherLayout';
 import { StudentLayout } from './components/StudentLayout';
 import Login from './pages/Login';
-import SignUp from './pages/SignIn';
+import SignUp from './pages/Signup';
 import Landing from './pages/landing';
 import TeacherDashboard from './pages/teacher/Dashboard';
 import Assignments from './pages/teacher/Assignments';

@@ -53,7 +53,7 @@ def save_submission_file(file: UploadFile) -> str:
     return str(file_path)
 
 
-# ✅ MAIN UPLOAD ROUTE (OPTIMIZED)
+# ✅ MAIN UPLOAD ROUTE
 @router.post("/submit")
 def upload_submission(
     assignment_id: int = Form(...),
@@ -61,19 +61,19 @@ def upload_submission(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-    # ✅ Check assignment exists
+    # Check assignment exists
     assignment = db.query(Assignment).filter(Assignment.id == assignment_id).first()
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
-    # ✅ Save file
+    # Save file
     file_path = save_submission_file(file)
 
-    # ✅ OCR
+    # OCR
     print("Running OCR...")
     ocr_text = process_pdf_with_sarvam(file_path)
 
-    # ✅ Save submission
+    # Save submission
     new_submission = Submission(
         assignment_id=assignment_id,
         student_id=student_id,
@@ -85,7 +85,7 @@ def upload_submission(
     db.commit()
     db.refresh(new_submission)
 
-    # ✅ Get previous submissions
+    # Compare with previous submissions
     submissions = db.query(Submission).filter(
         Submission.assignment_id == assignment_id,
         Submission.id != new_submission.id,
@@ -94,15 +94,12 @@ def upload_submission(
     results = []
 
     for sub in submissions:
-        # ❌ Skip if no OCR
         if not sub.ocr_text:
             continue
 
-        # ❌ Skip same student
         if sub.student_id == student_id:
             continue
 
-        # ✅ Avoid duplicate pairs
         id1 = min(new_submission.id, sub.id)
         id2 = max(new_submission.id, sub.id)
 
@@ -114,7 +111,6 @@ def upload_submission(
         if existing:
             continue
 
-        # ✅ Calculate similarity
         score = calculate_similarity(new_submission.ocr_text, sub.ocr_text)
 
         similarity = Similarity(
@@ -139,33 +135,40 @@ def upload_submission(
     }
 
 
-# ✅ GET submissions
+# ✅ GET submissions for a specific assignment (SECURE)
 @router.get("/assignment/{assignment_id}")
 def get_submissions_for_assignment(
     assignment_id: int,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
+    # 🔒 Teacher → only their assignment submissions
     if current_user.role == "teacher":
-        return db.query(Submission).filter(
-            Submission.assignment_id == assignment_id
-        ).all()
-    else:
-        return db.query(Submission).filter(
+        return db.query(Submission).join(Assignment).filter(
             Submission.assignment_id == assignment_id,
-            Submission.student_id == current_user.id
+            Assignment.created_by == current_user.id
         ).all()
-    
+
+    # 🔒 Student → only their own submissions
+    return db.query(Submission).filter(
+        Submission.assignment_id == assignment_id,
+        Submission.student_id == current_user.id
+    ).all()
+
+
+# ✅ GET all submissions (SECURE)
 @router.get("/")
 def get_all_submissions(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    # Teacher → all submissions
+    # 🔒 Teacher → only submissions of their assignments
     if current_user.role == "teacher":
-        return db.query(Submission).all()
+        return db.query(Submission).join(Assignment).filter(
+            Assignment.created_by == current_user.id
+        ).all()
 
-    # Student → only their submissions
+    # 🔒 Student → only their submissions
     return db.query(Submission).filter(
         Submission.student_id == current_user.id
     ).all()

@@ -80,27 +80,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [checkAuth]);
 
   // ✅ FETCH DATA FROM BACKEND
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [subRes, assignRes, userRes] = await Promise.all([
-          api.get('/submissions'),
-          api.get('/assignments'),
-          api.get('/users'),
-        ]);
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      // ⛔ wait until user is loaded
+      if (!state.currentUser) return;
 
-        console.log('SUBMISSIONS:', subRes.data);
+      const role = state.currentUser.role;
 
-        setSubmissions(subRes.data);
-        setAssignments(assignRes.data);
-        setUsers(userRes.data);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-      }
-    };
+      let assignmentUrl = '/assignments/all'; // default student
 
-    fetchData();
-  }, []);
+if (state.currentUser.role === 'teacher') {
+  assignmentUrl = '/assignments';
+}
+
+      const [subRes, assignRes, userRes] = await Promise.all([
+        api.get('/submissions'),
+        api.get(assignmentUrl),   // ✅ FIXED HERE
+        api.get('/users'),
+      ]);
+
+      console.log('SUBMISSIONS:', subRes.data);
+
+      setSubmissions(subRes.data);
+      setAssignments(assignRes.data);
+      setUsers(userRes.data);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    }
+  };
+
+  fetchData();
+}, [state.currentUser]);
 
   // ✅ LOGIN
   const login = useCallback((token: string, user: User) => {
@@ -132,9 +143,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setState({ currentUser: user, isLoading: false });
       return { success: true, user };
     } catch (err: any) {
-      const message = err.response?.data?.detail || 'Registration failed. Please try again.';
-      return { success: false, error: message };
-    }
+  console.log("FULL ERROR:", err.response?.data); // optional debug
+
+  const message =
+    err.response?.data?.detail?.[0]?.msg ||
+    err.response?.data?.detail ||
+    err.message ||
+    'Registration failed. Please try again.';
+
+  return { success: false, error: message };
+}
   }, []);
 
   // ✅ LOGOUT
@@ -149,6 +167,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       checkAuth,
+      register,
 
         // ✅ REAL DATA
         submissions,
