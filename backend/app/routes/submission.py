@@ -10,7 +10,7 @@ from app.models.similarity import Similarity
 from app.models.submission import Submission
 from app.services.ocr_service import process_pdf_with_sarvam
 from app.services.similarity_service import calculate_similarity
-from app.routes.auth import get_current_user
+from app.routes.auth import get_current_user, get_current_student
 
 router = APIRouter(prefix="/submissions", tags=["Submissions"])
 
@@ -57,10 +57,12 @@ def save_submission_file(file: UploadFile) -> str:
 @router.post("/submit")
 def upload_submission(
     assignment_id: int = Form(...),
-    student_id: int = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_student),
 ):
+    # 🔒 Derive student_id from authenticated user — prevents forging
+    student_id = current_user.id
     # Check assignment exists
     assignment = db.query(Assignment).filter(Assignment.id == assignment_id).first()
     if not assignment:

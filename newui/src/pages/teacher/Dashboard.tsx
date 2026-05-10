@@ -21,7 +21,7 @@ export default function TeacherDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const assignRes = await api.get('/assignments/');
+        const assignRes = await api.get('/assignments/teacher/me');
         // Assume API returns array
         const myAssigns = assignRes.data.map((a: any) => ({
           ...a,

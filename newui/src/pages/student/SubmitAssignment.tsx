@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, Upload, FileText, CheckCircle, X, AlertCircle, Code } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
 import api from '../../services/api';
-import type { RubricItem } from '../../store/types';
+import type { RubricItem, Assignment } from '../../store/types';
 import { toast } from 'sonner';
 
 const FILE_ICONS: Record<string, string> = {
@@ -16,7 +16,7 @@ export default function SubmitAssignment() {
   const navigate = useNavigate();
   const { currentUser } = useApp();
 
-  const [assignment, setAssignment] = useState<any>(null);
+  const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [existingSub, setExistingSub] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,8 +46,8 @@ export default function SubmitAssignment() {
         if (subRes.data && subRes.data.length > 0) {
           setExistingSub({
             ...subRes.data[0],
-            fileName: subRes.data[0].file_path ? subRes.data[0].file_path.split('/').pop() : 'Submission',
-            submittedAt: new Date().toISOString(), // DB has created_at maybe, simplifying
+            fileName: subRes.data[0].file_path ? subRes.data[0].file_path.replace(/\\/g, '/').split('/').pop() : 'Submission',
+            submittedAt: subRes.data[0].created_at || new Date().toISOString(),
           });
         }
       } catch (err) {
@@ -153,9 +153,8 @@ export default function SubmitAssignment() {
   try {
     const formData = new FormData();
 
-// ✅ FIXED TYPES
+// ✅ BUG-01 FIX: student_id is now derived from JWT on the backend
 formData.append("assignment_id", String(id));
-formData.append("student_id", String(currentUser?.id));
 
 if (mode === 'file' && file) {
   formData.append('file', file);
@@ -319,12 +318,11 @@ await api.post("/submissions/submit", formData, {
         </div>
       )}
 
-      {/* Rubric Preview */}
-      {assignment.rubric.length > 0 && (
+      {assignment?.rubric && assignment.rubric.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <h2 className="font-semibold text-gray-800 mb-3">Grading Rubric</h2>
           <div className="space-y-2">
-            {assignment.rubric.map(r => (
+            {assignment.rubric.map((r: RubricItem) => (
               <div key={r.id} className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-sm font-medium text-gray-700">{r.criterion}</div>
@@ -340,7 +338,7 @@ await api.post("/submissions/submit", formData, {
       {/* Submit Button */}
       <button
         onClick={handleSubmit}
-        disabled={submitting || (mode === 'file' && !file) || (mode === 'paste' && !textContent.trim())}
+        disabled={submitting || isPast || (mode === 'file' && !file) || (mode === 'paste' && !textContent.trim())}
         className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl font-medium transition-colors text-sm"
       >
         {submitting ? (

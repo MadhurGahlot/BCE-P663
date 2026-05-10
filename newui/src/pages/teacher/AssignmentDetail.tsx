@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import {
   ArrowLeft, Upload, FileText, Users, BarChart3, Award,
-  Clock, AlertTriangle, CheckCircle, Eye, Trash2, Download, Plus, Settings, Edit2
+  Clock, AlertTriangle, CheckCircle, Eye, X, Download, Plus, Settings, Edit2
 } from 'lucide-react';
 import api from '../../services/api';
 import { useApp } from '../../store/AppContext';
@@ -13,18 +13,69 @@ import { toast } from 'sonner';
 export default function AssignmentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getAssignmentById, getSubmissionsForAssignment, users, addSubmission, runSimilarityCheck, getSimilarityResult } = useApp();
+  const { users } = useApp();
   const [checking, setChecking] = useState(false);
-  const [viewContent, setViewContent] = useState<Submission | null>(null);
+  const [viewContent, setViewContent] = useState<any | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSettingRules, setIsSettingRules] = useState(false);
   const [editData, setEditData] = useState<any>({});
   const [rulesData, setRulesData] = useState({ low: 20, high: 60, marks_low: 0, marks_medium: 10, marks_high: 20 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const assignment = getAssignmentById(id ?? '');
-  const submissions = getSubmissionsForAssignment(id ?? '');
-  const simResult = getSimilarityResult(id ?? '');
+  // ✅ Load data from API directly
+  const [assignment, setAssignment] = useState<any>(null);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [simResult, setSimResult] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      const assignRes = await api.get(`/assignments/${id}`);
+      setAssignment({
+        ...assignRes.data,
+        id: assignRes.data.id.toString(),
+        totalMarks: assignRes.data.total_marks,
+        description: assignRes.data.description || `Assignment for ${assignRes.data.department}`,
+        rubric: [],
+        allowedFileTypes: ['.pdf', '.txt', '.png', '.jpg', '.jpeg'],
+        createdAt: assignRes.data.created_at ? new Date(assignRes.data.created_at).toLocaleDateString() : 'N/A',
+      });
+
+      const subRes = await api.get(`/submissions/assignment/${id}`);
+      setSubmissions(subRes.data.map((s: any) => ({
+        ...s,
+        id: s.id.toString(),
+        studentId: s.student_id ? s.student_id.toString() : 'student',
+        fileName: s.file_path ? s.file_path.replace(/\\/g, '/').split('/').pop() : 'submission.txt',
+        submittedAt: s.created_at || new Date().toISOString(),
+        content: s.ocr_text || 'No extracted text available for this submission.',
+      })));
+
+      try {
+        const simRes = await api.get(`/similarity/assignment/${id}`);
+        if (simRes.data && simRes.data.length > 0) {
+          setSimResult({
+            computedAt: new Date().toISOString(),
+            pairs: simRes.data.map((r: any) => ({
+              submission1Id: r.submissionid1.toString(),
+              submission2Id: r.submissionid2.toString(),
+              similarity: r.similarityscore / 100,
+            }))
+          });
+        }
+      } catch (e) { }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (id) fetchData();
+  }, [id]);
+
+  if (loading) return <div className="p-10 text-center text-gray-500">Loading...</div>;
 
   if (!assignment) {
     return (
@@ -35,28 +86,45 @@ export default function AssignmentDetail() {
     );
   }
 
-  const graded = submissions.filter(s => s.grade !== undefined).length;
+  const graded = submissions.filter(s => s.grade !== undefined && s.grade !== null).length;
   const highSim = submissions.filter(s => (s.maxSimilarity ?? 0) >= 0.6).length;
 
+  // ✅ BUG-07 FIX: Real API call for similarity check
   const handleRunSimilarity = async () => {
     if (submissions.length < 2) {
       toast.error('Need at least 2 submissions to run similarity check.');
       return;
     }
     setChecking(true);
-    await new Promise(r => setTimeout(r, 2000)); // simulate processing
-    runSimilarityCheck(id ?? '');
-    setChecking(false);
-    toast.success('Similarity check complete!');
+    try {
+      const simRes = await api.get(`/similarity/assignment/${id}`);
+      if (simRes.data && simRes.data.length > 0) {
+        setSimResult({
+          computedAt: new Date().toISOString(),
+          pairs: simRes.data.map((r: any) => ({
+            submission1Id: r.submissionid1.toString(),
+            submission2Id: r.submissionid2.toString(),
+            similarity: r.similarityscore / 100,
+          }))
+        });
+      }
+      toast.success('Similarity check complete!');
+    } catch (err) {
+      toast.error('Failed to run similarity check.');
+    } finally {
+      setChecking(false);
+    }
   };
 
+  // ✅ BUG-20 FIX: Re-fetch data instead of window.location.reload()
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await api.put(`/assignments/${id}`, editData);
       toast.success('Assignment updated successfully.');
       setIsEditing(false);
-      window.location.reload();
+      setLoading(true);
+      await fetchData();
     } catch (err) {
       console.error(err);
       toast.error('Failed to update assignment.');
@@ -382,7 +450,7 @@ export default function AssignmentDetail() {
                 <div className="text-xs text-gray-500">{getStudentName(viewContent.studentId)}</div>
               </div>
               <button onClick={() => setViewContent(null)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500">
-                <Trash2 size={16} />
+                <X size={16} />
               </button>
             </div>
             <div className="flex-1 overflow-auto p-6">

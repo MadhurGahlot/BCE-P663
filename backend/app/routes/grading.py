@@ -6,6 +6,12 @@ from app.models.assignments import Assignment
 from app.models.grading import GradingRule
 from app.models.submission import Submission
 from app.routes.auth import get_current_teacher
+from pydantic import BaseModel
+
+
+class GradeSubmissionRequest(BaseModel):
+    grade: int
+    feedback: str = ""
 
 router = APIRouter(prefix="/grading", tags=["Grading"])
 
@@ -53,11 +59,6 @@ def set_grading_rules(
     db.refresh(rule)
 
     return {"message": "Grading rules saved"}
-
-from pydantic import BaseModel
-class GradeSubmissionRequest(BaseModel):
-    grade: int
-    feedback: str = ""
 
 @router.put("/{submission_id}")
 def grade_submission(

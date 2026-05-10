@@ -39,8 +39,8 @@ export default function SimilarityReport() {
           ...s,
           id: s.id.toString(),
           studentId: s.student_id ? s.student_id.toString() : 'student',
-          fileName: s.file_path ? s.file_path.split('/').pop() : 'submission.txt',
-          content: 'Content downloaded from server...', // Mocked as backend doesn't send content
+          fileName: s.file_path ? s.file_path.replace(/\\/g, '/').split('/').pop() : 'submission.txt',
+          content: s.ocr_text || 'No extracted text available for this submission.',
         }));
         setSubmissions(subs);
 
