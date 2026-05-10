@@ -1,21 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
+from app.database import get_db
 from app.models.assignments import Assignment
 from app.models.user import User
 from app.schemas.assignments_schemas import AssignmentCreate, AssignmentResponse
 from app.utils.dependencies import get_current_teacher
 
 router = APIRouter(prefix="/assignments", tags=["Assignments"])
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.post("/", response_model=AssignmentResponse)
@@ -40,9 +32,19 @@ def create_assignment(
     return new_assignment
 
 
+# ✅ GET all assignments (public, for students)
 @router.get("/", response_model=list[AssignmentResponse])
 def get_assignments(db: Session = Depends(get_db)):
     return db.query(Assignment).all()
+
+
+# ✅ GET only the current teacher's assignments
+@router.get("/teacher/me", response_model=list[AssignmentResponse])
+def get_my_assignments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_teacher),
+):
+    return db.query(Assignment).filter(Assignment.created_by == current_user.id).all()
 
 
 @router.get("/{assignment_id}", response_model=AssignmentResponse)
@@ -65,6 +67,10 @@ def delete_assignment(
 
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
+
+    # 🔒 Verify the teacher owns this assignment
+    if assignment.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Not your assignment")
 
     db.delete(assignment)
     db.commit()

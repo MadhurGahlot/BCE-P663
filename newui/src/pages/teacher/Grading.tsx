@@ -43,9 +43,9 @@ export default function Grading() {
           ...s,
           id: s.id.toString(),
           studentId: s.student_id ? s.student_id.toString() : 'student',
-          fileName: s.file_path ? s.file_path.split('/').pop() : 'submission.txt',
+          fileName: s.file_path ? s.file_path.replace(/\\/g, '/').split('/').pop() : 'submission.txt',
           submittedAt: s.created_at || new Date().toISOString(),
-          content: s.ocr_text || 'Content downloaded from server...',
+          content: s.ocr_text || 'No extracted text available for this submission.',
         })));
 
         try {

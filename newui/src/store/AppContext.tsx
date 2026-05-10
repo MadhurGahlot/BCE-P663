@@ -88,10 +88,10 @@ useEffect(() => {
 
       const role = state.currentUser.role;
 
-      let assignmentUrl = '/assignments/all'; // default student
+      let assignmentUrl = '/assignments/'; // default student
 
 if (state.currentUser.role === 'teacher') {
-  assignmentUrl = '/assignments';
+  assignmentUrl = '/assignments/teacher/me';
 }
 
       const [subRes, assignRes, userRes] = await Promise.all([
@@ -100,7 +100,6 @@ if (state.currentUser.role === 'teacher') {
         api.get('/users'),
       ]);
 
-      console.log('SUBMISSIONS:', subRes.data);
 
       setSubmissions(subRes.data);
       setAssignments(assignRes.data);
@@ -143,7 +142,7 @@ if (state.currentUser.role === 'teacher') {
       setState({ currentUser: user, isLoading: false });
       return { success: true, user };
     } catch (err: any) {
-  console.log("FULL ERROR:", err.response?.data); // optional debug
+  console.error("Registration error:", err.response?.data);
 
   const message =
     err.response?.data?.detail?.[0]?.msg ||
@@ -174,15 +173,15 @@ if (state.currentUser.role === 'teacher') {
         assignments,
         users,
 
-        // Dummy methods
-        getTeacherAssignments: () => [],
-        getSubmissionsForAssignment: () => [],
+        // ✅ Real data lookups from fetched state
+        getTeacherAssignments: (teacherId: string) => assignments.filter(a => a.created_by?.toString() === teacherId),
+        getSubmissionsForAssignment: (assignmentId: string) => submissions.filter(s => s.assignment_id?.toString() === assignmentId),
         getSimilarityResult: () => null,
         similarityResults: [],
-        addAssignment: () => {},
-        addSubmission: () => {},
+        addAssignment: (a: any) => setAssignments(prev => [...prev, a]),
+        addSubmission: (s: any) => setSubmissions(prev => [...prev, s]),
         runSimilarityCheck: () => {},
-        getAssignmentById: () => null,
+        getAssignmentById: (id: string) => assignments.find(a => a.id?.toString() === id) ?? null,
       }}
     >
       {children}

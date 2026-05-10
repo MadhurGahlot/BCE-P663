@@ -18,6 +18,7 @@ from app.routes import assignments
 from app.routes import submission
 from app.routes import grading
 from app.routes import reset_password
+from app.routes import user
 
 
 
@@ -55,6 +56,7 @@ app.include_router(submission.router)
 app.include_router(similarity.router)
 app.include_router(grading.router)
 app.include_router(reset_password.router)
+app.include_router(user.router)
 
 
 @app.get("/")

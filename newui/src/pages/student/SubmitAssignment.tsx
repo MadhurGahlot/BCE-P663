@@ -47,7 +47,7 @@ export default function SubmitAssignment() {
           setExistingSub({
             ...subRes.data[0],
             fileName: subRes.data[0].file_path ? subRes.data[0].file_path.split('/').pop() : 'Submission',
-            submittedAt: new Date().toISOString(), // DB has created_at maybe, simplifying
+            submittedAt: subRes.data[0].created_at || new Date().toISOString(),
           });
         }
       } catch (err) {
@@ -153,9 +153,8 @@ export default function SubmitAssignment() {
   try {
     const formData = new FormData();
 
-// ✅ FIXED TYPES
+// ✅ BUG-01 FIX: student_id is now derived from JWT on the backend
 formData.append("assignment_id", String(id));
-formData.append("student_id", String(currentUser?.id));
 
 if (mode === 'file' && file) {
   formData.append('file', file);
@@ -340,7 +339,7 @@ await api.post("/submissions/submit", formData, {
       {/* Submit Button */}
       <button
         onClick={handleSubmit}
-        disabled={submitting || (mode === 'file' && !file) || (mode === 'paste' && !textContent.trim())}
+        disabled={submitting || isPast || (mode === 'file' && !file) || (mode === 'paste' && !textContent.trim())}
         className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl font-medium transition-colors text-sm"
       >
         {submitting ? (
