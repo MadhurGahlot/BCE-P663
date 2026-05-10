@@ -46,7 +46,7 @@ export default function SubmitAssignment() {
         if (subRes.data && subRes.data.length > 0) {
           setExistingSub({
             ...subRes.data[0],
-            fileName: subRes.data[0].file_path ? subRes.data[0].file_path.split('/').pop() : 'Submission',
+            fileName: subRes.data[0].file_path ? subRes.data[0].file_path.replace(/\\/g, '/').split('/').pop() : 'Submission',
             submittedAt: subRes.data[0].created_at || new Date().toISOString(),
           });
         }
