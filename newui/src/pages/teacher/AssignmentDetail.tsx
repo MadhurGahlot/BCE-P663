@@ -7,13 +7,19 @@ import {
 import api from '../../services/api';
 import { useApp } from '../../store/AppContext';
 import { getSimilarityBg, getSimilarityLabel } from '../../store/similarity';
-import type { Submission } from '../../store/types';
+import type { Submission, RubricItem } from '../../store/types';
 import { toast } from 'sonner';
 
 export default function AssignmentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { users } = useApp();
+  const { users, addSubmission: addSubmissionGlobal } = useApp();
+
+  const addSubmission = (newSub: any) => {
+    addSubmissionGlobal(newSub);
+    setSubmissions(prev => [...prev, newSub]);
+  };
+
   const [checking, setChecking] = useState(false);
   const [viewContent, setViewContent] = useState<any | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -266,7 +272,7 @@ export default function AssignmentDetail() {
           <h2 className="font-semibold text-gray-800 mb-4">Grading Rubric</h2>
           {assignment.rubric.length > 0 ? (
             <div className="space-y-2">
-              {assignment.rubric.map(r => (
+              {assignment.rubric.map((r: RubricItem) => (
                 <div key={r.id} className="flex items-start justify-between gap-2">
                   <div>
                     <div className="text-sm font-medium text-gray-700">{r.criterion}</div>
