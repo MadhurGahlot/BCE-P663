@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import {
   ArrowLeft, Save, CheckCircle, ChevronLeft, ChevronRight,
-  Award, FileText, Eye, Download, User
+  Award, FileText, Eye, Download, User, Zap
 } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
 import { getSimilarityBg } from '../../store/similarity';
@@ -20,6 +20,7 @@ export default function Grading() {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [simResult, setSimResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [autoGrading, setAutoGrading] = useState(false);
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [gradingMode, setGradingMode] = useState<'rubric' | 'direct'>('rubric');
@@ -68,6 +69,107 @@ export default function Grading() {
     };
     if (id) fetchData();
   }, [id]);
+
+  const refetchData = async () => {
+    setLoading(true);
+    try {
+      const assignRes = await api.get(`/assignments/${id}`);
+      setAssignment({
+        ...assignRes.data,
+        id: assignRes.data.id.toString(),
+        totalMarks: assignRes.data.total_marks,
+        description: assignRes.data.description || `Assignment for ${assignRes.data.department}`,
+        rubric: [],
+      });
+      const subRes = await api.get(`/submissions/assignment/${id}`);
+      setSubmissions(subRes.data.map((s: any) => ({
+        ...s,
+        id: s.id.toString(),
+        studentId: s.student_id ? s.student_id.toString() : 'student',
+        fileName: s.file_path ? s.file_path.replace(/\\/g, '/').split('/').pop() : 'submission.txt',
+        submittedAt: s.created_at || new Date().toISOString(),
+        content: s.ocr_text || 'No extracted text available for this submission.',
+      })));
+      try {
+        const simRes = await api.get(`/similarity/assignment/${id}`);
+        if (simRes.data && simRes.data.length > 0) {
+          setSimResult({
+            pairs: simRes.data.map((r: any) => ({
+              submission1Id: r.submissionid1.toString(),
+              submission2Id: r.submissionid2.toString(),
+              similarity: r.similarityscore / 100,
+            }))
+          });
+        }
+      } catch (e) { }
+    } catch (err) {
+      toast.error('Failed to reload data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ⚡ Auto-Grade: uses existing similarity + grading endpoints (frontend-only logic)
+  const handleAutoGrade = async () => {
+    if (!confirm('Auto-grade all ungraded submissions based on similarity scores and grading rules?\n\nAlready graded submissions will be skipped.')) return;
+    setAutoGrading(true);
+    try {
+      const simRes = await api.get(`/similarity/assignment/${id}`);
+      const pairs = simRes.data;
+      if (!pairs || pairs.length === 0) {
+        toast.error('No similarity data available. Run a similarity check first.');
+        setAutoGrading(false);
+        return;
+      }
+      const maxPenalty: Record<string, { sim: number; penalty: number }> = {};
+      for (const pair of pairs) {
+        const id1 = pair.submissionid1.toString();
+        const id2 = pair.submissionid2.toString();
+        const sim = pair.similarityscore;
+        const penalty = pair.marks ?? 0;
+        if (!maxPenalty[id1] || sim > maxPenalty[id1].sim) {
+          maxPenalty[id1] = { sim, penalty };
+        }
+        if (!maxPenalty[id2] || sim > maxPenalty[id2].sim) {
+          maxPenalty[id2] = { sim, penalty };
+        }
+      }
+      let gradedCount = 0;
+      let skippedCount = 0;
+      const totalMarks = assignment.totalMarks ?? 100;
+      for (const sub of submissions) {
+        if (sub.grade !== undefined && sub.grade !== null) {
+          skippedCount++;
+          continue;
+        }
+        const info = maxPenalty[sub.id];
+        const penalty = info?.penalty ?? 0;
+        const sim = info?.sim ?? 0;
+        const grade = Math.max(0, totalMarks - penalty);
+        let feedback = '';
+        if (sim < 20) {
+          feedback = `Auto-graded: Low similarity (${sim.toFixed(1)}%). Penalty: -${penalty} marks.`;
+        } else if (sim < 60) {
+          feedback = `Auto-graded: Moderate similarity (${sim.toFixed(1)}%). Penalty: -${penalty} marks.`;
+        } else {
+          feedback = `Auto-graded: High similarity (${sim.toFixed(1)}%). Penalty: -${penalty} marks.`;
+        }
+        try {
+          await api.put(`/grading/${sub.id}`, { grade, feedback });
+          gradedCount++;
+        } catch (err) {
+          console.error(`Failed to grade submission ${sub.id}`, err);
+        }
+      }
+      toast.success(`Auto-graded ${gradedCount} submissions. Skipped ${skippedCount} already graded.`);
+      await refetchData();
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || 'Failed to auto-grade.';
+      toast.error(detail);
+    } finally {
+      setAutoGrading(false);
+    }
+  };
 
   const sub = submissions[currentIdx];
 
@@ -157,6 +259,17 @@ export default function Grading() {
           </button>
           <button onClick={() => { exportToPDF(assignment, submissions, users, simResult); toast.success('PDF started!'); }} className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-medium">
             <Download size={13} /> PDF
+          </button>
+          <button
+            onClick={handleAutoGrade}
+            disabled={autoGrading || submissions.length < 2}
+            className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white rounded-xl text-xs font-medium transition-colors"
+          >
+            {autoGrading ? (
+              <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Grading...</>
+            ) : (
+              <><Zap size={13} /> Auto Grade</>
+            )}
           </button>
         </div>
       </div>
