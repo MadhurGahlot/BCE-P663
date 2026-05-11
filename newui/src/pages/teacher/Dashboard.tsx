@@ -7,74 +7,60 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useApp } from '../../store/AppContext';
 import { getSimilarityBg } from '../../store/similarity';
 import api from '../../services/api';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export default function TeacherDashboard() {
-  const { currentUser } = useApp();
+  const { currentUser, assignments: ctxAssignments, submissions: ctxSubmissions } = useApp();
 
-  const [loading, setLoading] = useState(true);
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [submissionsData, setSubmissionsData] = useState<Record<string, any[]>>({});
+  // Use context data directly — no duplicate API calls for assignments/submissions
+  const assignments = ctxAssignments.map(a => ({
+    ...a,
+    id: a.id?.toString(),
+    totalMarks: a.totalMarks ?? a.total_marks ?? 100,
+  }));
+
+  // Build submissions map from context data (already normalized)
+  const submissionsData: Record<string, any[]> = {};
+  const allSubmissions: any[] = [];
+  assignments.forEach(a => {
+    const subs = ctxSubmissions.filter(s => s.assignmentId === a.id);
+    submissionsData[a.id] = subs;
+    allSubmissions.push(...subs);
+  });
+
+  // Only similarity needs a separate fetch (not in context)
   const [similarityResultsData, setSimilarityResultsData] = useState<Record<string, any>>({});
-  const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
+  const [simLoading, setSimLoading] = useState(true);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const assignRes = await api.get('/assignments/teacher/me');
-        // Assume API returns array
-        const myAssigns = assignRes.data.map((a: any) => ({
-          ...a,
-          id: a.id.toString(),
-          totalMarks: a.total_marks,
-          deadline: a.deadline,
-        }));
-        setAssignments(myAssigns);
-
-        const subsMap: Record<string, any[]> = {};
-        const simMap: Record<string, any> = {};
-        const allSubs: any[] = [];
-
-        await Promise.all(myAssigns.map(async (a: any) => {
-          try {
-            const subRes = await api.get(`/submissions/assignment/${a.id}`);
-            const subs = subRes.data.map((s: any) => ({
-              ...s,
-              id: s.id.toString(),
-              studentId: s.student_id ? s.student_id.toString() : 'student',
-            }));
-            subsMap[a.id] = subs;
-            allSubs.push(...subs);
-          } catch (e) { }
-
-          try {
-            const simRes = await api.get(`/similarity/assignment/${a.id}`);
-            if (simRes.data && simRes.data.length > 0) {
-              simMap[a.id] = {
-                assignmentId: a.id,
-                pairs: simRes.data.map((r: any) => ({
-                  submission1Id: r.submissionid1.toString(),
-                  submission2Id: r.submissionid2.toString(),
-                  similarity: r.similarityscore / 100,
-                }))
-              };
-            }
-          } catch (e) { }
-        }));
-
-        setSubmissionsData(subsMap);
-        setSimilarityResultsData(simMap);
-        setAllSubmissions(allSubs);
-      } catch (err) {
-        console.error("Dashboard fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
+    if (assignments.length === 0 || fetchedRef.current) { setSimLoading(false); return; }
+    fetchedRef.current = true;
+    const fetchSim = async () => {
+      const simMap: Record<string, any> = {};
+      await Promise.all(assignments.map(async (a: any) => {
+        try {
+          const simRes = await api.get(`/similarity/assignment/${a.id}`);
+          if (simRes.data && simRes.data.length > 0) {
+            simMap[a.id] = {
+              assignmentId: a.id,
+              pairs: simRes.data.map((r: any) => ({
+                submission1Id: r.submissionid1.toString(),
+                submission2Id: r.submissionid2.toString(),
+                similarity: r.similarityscore / 100,
+              }))
+            };
+          }
+        } catch (e) { }
+      }));
+      setSimilarityResultsData(simMap);
+      setSimLoading(false);
     };
-    fetchData();
-  }, [currentUser]);
+    fetchSim();
+  }, [assignments.length]);
 
-  if (loading) return <div className="p-10 text-center text-gray-500">Loading Dashboard...</div>;
+  const loading = ctxAssignments.length === 0 && simLoading;
+  if (loading && !currentUser) return <div className="p-10 text-center text-gray-500">Loading Dashboard...</div>;
 
   const gradedCount = allSubmissions.filter(s => s.grade !== null && s.grade !== undefined).length;
   // Approximating max similarity per submission using pairs
