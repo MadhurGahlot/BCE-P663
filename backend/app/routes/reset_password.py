@@ -32,10 +32,10 @@ def request_reset(email: str, db: Session = Depends(get_db)):
     db.add(reset)
     db.commit()
 
-    # 👉 For now, show token in console
+    # 👉 For now, show token in console and return it for easy testing
     print("RESET TOKEN:", token)
 
-    return {"message": "Reset token generated (check console)"}
+    return {"message": "Reset token generated", "token": token}
 
 
 # 🔹 STEP 2: RESET PASSWORD

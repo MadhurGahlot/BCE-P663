@@ -4,6 +4,8 @@ import { TeacherLayout } from './components/TeacherLayout';
 import { StudentLayout } from './components/StudentLayout';
 import Login from './pages/Login';
 import SignUp from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Landing from './pages/landing';
 import TeacherDashboard from './pages/teacher/Dashboard';
 import Assignments from './pages/teacher/Assignments';
@@ -28,6 +30,8 @@ export const router = createBrowserRouter([
       { path: '/', element: <Landing /> },
       { path: '/login', element: <Login /> },
       { path: '/signup', element: <SignUp /> },
+      { path: '/forgot-password', element: <ForgotPassword /> },
+      { path: '/reset-password', element: <ResetPassword /> },
       {
         path: '/teacher',
         element: <TeacherLayout />,
