@@ -2,19 +2,26 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import {
   ArrowLeft, Upload, FileText, Users, BarChart3, Award,
-  Clock, AlertTriangle, CheckCircle, Eye, X, Download, Plus, Settings, Edit2
+  Clock, AlertTriangle, CheckCircle, Eye, X, Download, Plus, Settings, Edit2, Zap
 } from 'lucide-react';
 import api from '../../services/api';
 import { useApp } from '../../store/AppContext';
 import { getSimilarityBg, getSimilarityLabel } from '../../store/similarity';
-import type { Submission } from '../../store/types';
+import type { Submission, RubricItem } from '../../store/types';
 import { toast } from 'sonner';
 
 export default function AssignmentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { users } = useApp();
+  const { users, addSubmission: addSubmissionGlobal } = useApp();
+
+  const addSubmission = (newSub: any) => {
+    addSubmissionGlobal(newSub);
+    setSubmissions(prev => [...prev, newSub]);
+  };
+
   const [checking, setChecking] = useState(false);
+  const [autoGrading, setAutoGrading] = useState(false);
   const [viewContent, setViewContent] = useState<any | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSettingRules, setIsSettingRules] = useState(false);
@@ -143,6 +150,85 @@ export default function AssignmentDetail() {
     }
   };
 
+  // ⚡ Auto-Grade: uses existing similarity + grading endpoints (frontend-only logic)
+  const handleAutoGrade = async () => {
+    if (!confirm('Auto-grade all ungraded submissions based on similarity scores and grading rules?\n\nAlready graded submissions will be skipped.')) return;
+    setAutoGrading(true);
+    try {
+      // 1. Fetch similarity results (which include the penalty "marks" from grading rules)
+      const simRes = await api.get(`/similarity/assignment/${id}`);
+      const pairs = simRes.data;
+
+      if (!pairs || pairs.length === 0) {
+        toast.error('No similarity data available. Run a similarity check first.');
+        setAutoGrading(false);
+        return;
+      }
+
+      // 2. Compute max similarity & worst penalty per submission
+      const maxPenalty: Record<string, { sim: number; penalty: number }> = {};
+
+      for (const pair of pairs) {
+        const id1 = pair.submissionid1.toString();
+        const id2 = pair.submissionid2.toString();
+        const sim = pair.similarityscore;
+        const penalty = pair.marks ?? 0;
+
+        if (!maxPenalty[id1] || sim > maxPenalty[id1].sim) {
+          maxPenalty[id1] = { sim, penalty };
+        }
+        if (!maxPenalty[id2] || sim > maxPenalty[id2].sim) {
+          maxPenalty[id2] = { sim, penalty };
+        }
+      }
+
+      // 3. Grade each ungraded submission via PUT /grading/{sub_id}
+      let gradedCount = 0;
+      let skippedCount = 0;
+      const totalMarks = assignment.totalMarks ?? 100;
+
+      for (const sub of submissions) {
+        // Skip already-graded submissions
+        if (sub.grade !== undefined && sub.grade !== null) {
+          skippedCount++;
+          continue;
+        }
+
+        const info = maxPenalty[sub.id];
+        const penalty = info?.penalty ?? 0;
+        const sim = info?.sim ?? 0;
+        const grade = Math.max(0, totalMarks - penalty);
+
+        let feedback = '';
+        if (sim < 20) {
+          feedback = `Auto-graded: Low similarity (${sim.toFixed(1)}%). Penalty: -${penalty} marks.`;
+        } else if (sim < 60) {
+          feedback = `Auto-graded: Moderate similarity (${sim.toFixed(1)}%). Penalty: -${penalty} marks.`;
+        } else {
+          feedback = `Auto-graded: High similarity (${sim.toFixed(1)}%). Penalty: -${penalty} marks.`;
+        }
+
+        try {
+          await api.put(`/grading/${sub.id}`, { grade, feedback });
+          gradedCount++;
+        } catch (err) {
+          console.error(`Failed to grade submission ${sub.id}`, err);
+        }
+      }
+
+      toast.success(`Auto-graded ${gradedCount} submissions. Skipped ${skippedCount} already graded.`);
+
+      // 4. Refresh data to show updated grades
+      setLoading(true);
+      await fetchData();
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || 'Failed to auto-grade. Make sure grading rules are set and similarity has been run.';
+      toast.error(detail);
+    } finally {
+      setAutoGrading(false);
+    }
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -217,6 +303,17 @@ export default function AssignmentDetail() {
           <Link to={`/teacher/assignments/${id}/similarity`} className="flex items-center gap-1.5 px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl text-xs font-medium transition-colors">
             <BarChart3 size={14} /> Similarity
           </Link>
+          <button
+            onClick={handleAutoGrade}
+            disabled={autoGrading || submissions.length < 2}
+            className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white rounded-xl text-xs font-medium transition-colors"
+          >
+            {autoGrading ? (
+              <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Grading...</>
+            ) : (
+              <><Zap size={14} /> Auto Grade</>
+            )}
+          </button>
           <Link to={`/teacher/assignments/${id}/grade`} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-medium transition-colors">
             <Award size={14} /> Grade All
           </Link>
@@ -266,7 +363,7 @@ export default function AssignmentDetail() {
           <h2 className="font-semibold text-gray-800 mb-4">Grading Rubric</h2>
           {assignment.rubric.length > 0 ? (
             <div className="space-y-2">
-              {assignment.rubric.map(r => (
+              {assignment.rubric.map((r: RubricItem) => (
                 <div key={r.id} className="flex items-start justify-between gap-2">
                   <div>
                     <div className="text-sm font-medium text-gray-700">{r.criterion}</div>
