@@ -38,9 +38,9 @@ export default function StudentsPage() {
           const graded = submissions.filter(s => s.grade !== undefined);
           const avgGrade = graded.length > 0
             ? graded.reduce((a, s) => {
-                const assign = getAssignmentById(s.assignmentId);
-                return a + (s.grade! / (assign?.totalMarks ?? 100)) * 100;
-              }, 0) / graded.length
+              const assign = getAssignmentById(s.assignmentId);
+              return a + (s.grade! / (assign?.totalMarks ?? 100)) * 100;
+            }, 0) / graded.length
             : null;
           const highSim = submissions.filter(s => (s.maxSimilarity ?? 0) >= 0.6).length;
 

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.assignments import Assignment
 from app.models.user import User
-from app.schemas.assignments_schemas import AssignmentCreate, AssignmentResponse
+from app.schemas.assignments_schemas import AssignmentCreate, AssignmentResponse, AssignmentUpdate
 from app.utils.dependencies import get_current_teacher
 
 router = APIRouter(prefix="/assignments", tags=["Assignments"])
@@ -53,6 +53,41 @@ def get_assignment(assignment_id: int, db: Session = Depends(get_db)):
 
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
+
+    return assignment
+
+
+# ✅ UPDATE assignment (teacher only, owner only)
+@router.put("/{assignment_id}", response_model=AssignmentResponse)
+def update_assignment(
+    assignment_id: int,
+    update: AssignmentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_teacher),
+):
+    assignment = db.query(Assignment).filter(Assignment.id == assignment_id).first()
+
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    # 🔒 Verify the teacher owns this assignment
+    if assignment.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Not your assignment")
+
+    # Update only provided fields
+    if update.title is not None:
+        assignment.title = update.title
+    if update.subject is not None:
+        assignment.subject = update.subject
+    if update.department is not None:
+        assignment.department = update.department
+    if update.deadline is not None:
+        assignment.deadline = update.deadline
+    if update.total_marks is not None:
+        assignment.total_marks = update.total_marks
+
+    db.commit()
+    db.refresh(assignment)
 
     return assignment
 

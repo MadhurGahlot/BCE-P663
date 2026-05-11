@@ -1,56 +1,24 @@
 import { Link } from 'react-router';
 import { Clock, CheckCircle, Upload, Award, FileText, AlertTriangle } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
-import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import React from 'react';
 
 export default function StudentDashboard() {
-  const { currentUser } = useApp();
+  const { currentUser, assignments: ctxAssignments, submissions: ctxSubmissions } = useApp();
 
-  const [loading, setLoading] = useState(true);
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [mySubmissions, setMySubmissions] = useState<any[]>([]);
-  // Backend doesn't have an easy users endpoint for students to get teacher names
-  const [teachers] = useState<Record<string, string>>({});
+  // Use normalized context data directly — no extra API calls
+  const assignments = ctxAssignments.map(a => ({
+    ...a,
+    id: a.id?.toString(),
+    totalMarks: a.totalMarks ?? a.total_marks ?? 100,
+  }));
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const assignRes = await api.get('/assignments/');
-        const myAssigns = assignRes.data.map((a: any) => ({
-          ...a,
-          id: a.id.toString(),
-          totalMarks: a.total_marks,
-          deadline: a.deadline,
-        }));
-        setAssignments(myAssigns);
+  const mySubmissions = ctxSubmissions.map(s => ({
+    ...s,
+    assignmentId: s.assignmentId?.toString(),
+  }));
 
-        const allSubs: any[] = [];
-        await Promise.all(myAssigns.map(async (a: any) => {
-          try {
-            const subRes = await api.get(`/submissions/assignment/${a.id}`);
-            if (subRes.data && subRes.data.length > 0) {
-              const s = subRes.data[0];
-              allSubs.push({
-                ...s,
-                id: s.id.toString(),
-                assignmentId: a.id.toString(),
-                studentId: s.student_id ? s.student_id.toString() : 'student',
-                fileName: s.file_path ? s.file_path.split('/').pop() : 'submission.txt',
-                submittedAt: s.created_at || new Date().toISOString(),
-              });
-            }
-          } catch (e) { }
-        }));
-        setMySubmissions(allSubs);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [currentUser]);
+  const teachers: Record<string, string> = {};
 
   const dept = currentUser?.department;
 
@@ -73,7 +41,7 @@ export default function StudentDashboard() {
     })()
     : null;
 
-  if (loading) return <div className="p-10 text-center text-gray-500">Loading Dashboard...</div>;
+
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">

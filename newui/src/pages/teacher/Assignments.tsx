@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import { Plus, Search, Filter, BookOpen, Clock, ChevronRight, FileText, CheckCircle, AlertTriangle, Trash2 } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
@@ -12,65 +12,48 @@ const DEPT_COLORS: Record<string, string> = {
 };
 
 export default function Assignments() {
-  const { currentUser } = useApp();
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [submissionsMap, setSubmissionsMap] = useState<Record<string, any[]>>({});
+  const { currentUser, assignments: ctxAssignments, submissions: ctxSubmissions, refetchData } = useApp();
+
+  // Use context data — normalized with camelCase fields
+  const assignments = ctxAssignments.map(a => ({
+    ...a,
+    id: a.id?.toString(),
+    totalMarks: a.totalMarks ?? a.total_marks ?? 100,
+    description: a.description || `Assignment for ${a.department} department`,
+    rawDeadline: a.deadline,
+    deadline: new Date(a.deadline).toLocaleDateString(),
+  }));
+
+  // Build submissions map from context
+  const submissionsMap: Record<string, any[]> = {};
+  assignments.forEach(a => {
+    submissionsMap[a.id] = ctxSubmissions.filter(s => s.assignmentId === a.id);
+  });
+
+  // Similarity needs a separate fetch (not in context)
   const [similarityMap, setSimilarityMap] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState(true);
+  const fetchedRef = useRef(false);
   const [search, setSearch] = useState('');
   const [filterSubject, setFilterSubject] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
 
-  React.useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        // ✅ Use teacher-filtered endpoint — only returns current teacher's assignments
-        const response = await api.get('/assignments/teacher/me');
-
-        // ✅ BUG-10 FIX: Keep raw ISO deadline for filtering, store displayDeadline for rendering
-        const mapped = response.data.map((a: any) => ({
-          ...a,
-          id: a.id.toString(),
-          totalMarks: a.total_marks,
-          description: a.description || `Assignment for ${a.department} department`,
-          rawDeadline: a.deadline, // Keep raw ISO for date comparison
-          deadline: new Date(a.deadline).toLocaleDateString(), // Formatted for display
-        }));
-
-        setAssignments(mapped);
-
-        // ✅ BUG-09 FIX: Fetch real submission stats per assignment
-        const subsMap: Record<string, any[]> = {};
-        const simMap: Record<string, any> = {};
-
-        await Promise.all(mapped.map(async (a: any) => {
-          try {
-            const subRes = await api.get(`/submissions/assignment/${a.id}`);
-            subsMap[a.id] = subRes.data || [];
-          } catch (e) {
-            subsMap[a.id] = [];
+  useEffect(() => {
+    if (assignments.length === 0 || fetchedRef.current) return;
+    fetchedRef.current = true;
+    const fetchSim = async () => {
+      const simMap: Record<string, any> = {};
+      await Promise.all(assignments.map(async (a: any) => {
+        try {
+          const simRes = await api.get(`/similarity/assignment/${a.id}`);
+          if (simRes.data && simRes.data.length > 0) {
+            simMap[a.id] = simRes.data;
           }
-
-          try {
-            const simRes = await api.get(`/similarity/assignment/${a.id}`);
-            if (simRes.data && simRes.data.length > 0) {
-              simMap[a.id] = simRes.data;
-            }
-          } catch (e) { }
-        }));
-
-        setSubmissionsMap(subsMap);
-        setSimilarityMap(simMap);
-      } catch (err) {
-        console.error('Failed to fetch assignments', err);
-      } finally {
-        setLoading(false);
-      }
+        } catch (e) { }
+      }));
+      setSimilarityMap(simMap);
     };
-    if (currentUser?.id) {
-      fetchAssignments();
-    }
-  }, [currentUser?.id]);
+    fetchSim();
+  }, [assignments.length]);
 
   // ✅ BUG-10 FIX: Use rawDeadline for date comparison
   const filtered = assignments.filter(a => {
@@ -88,7 +71,7 @@ export default function Assignments() {
     if (window.confirm("Are you sure you want to delete this assignment? This cannot be undone.")) {
       try {
         await api.delete(`/assignments/${id}`);
-        setAssignments(assignments.filter(a => a.id !== id));
+        await refetchData();
       } catch (err) {
         console.error("Failed to delete assignment", err);
         alert("Failed to delete assignment.");
@@ -102,11 +85,7 @@ export default function Assignments() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Assignments</h1>
-          {loading ? (
-            <p className="text-gray-500 text-sm mt-0.5">Loading...</p>
-          ) : (
-            <p className="text-gray-500 text-sm mt-0.5">{assignments.length} total assignments</p>
-          )}
+          <p className="text-gray-500 text-sm mt-0.5">{assignments.length} total assignments</p>
         </div>
         <Link
           to="/teacher/assignments/new"

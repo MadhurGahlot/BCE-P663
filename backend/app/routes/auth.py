@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
 
 from app.database import get_db
 from app.models.user import User
@@ -127,3 +128,35 @@ def get_current_teacher(current_user: User = Depends(get_current_user)):
     if current_user.role != "teacher":
         raise HTTPException(status_code=403, detail="Only teachers allowed")
     return current_user
+
+
+# =========================
+# ✅ PROFILE UPDATE MODEL
+# =========================
+class ProfileUpdate(BaseModel):
+    name: str
+    email: str
+
+
+# =========================
+# ✅ UPDATE PROFILE
+# =========================
+@router.put("/me")
+def update_profile(
+    update: ProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Check if new email is already taken by another user
+    if update.email != current_user.email:
+        existing = db.query(User).filter(User.email == update.email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use")
+
+    current_user.name = update.name
+    current_user.email = update.email
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {"message": "Profile updated successfully", "name": current_user.name, "email": current_user.email}

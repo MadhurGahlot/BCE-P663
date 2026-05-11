@@ -15,7 +15,7 @@ export default function ViewGrade() {
   const assignments = app.assignments || [];
   const users = app.users || [];
 
-  const sub = submissions.find(s => s.id === Number(subId));
+  const sub = submissions.find(s => s.id === subId || s.id === Number(subId));
   const assignment = sub ? assignments?.find(a => a.id === sub.assignmentId) : null;
   const teacher = assignment ? users?.find(u => u.id === assignment.teacherId) : null;
 
@@ -28,7 +28,7 @@ export default function ViewGrade() {
     );
   }
 
-  const isGraded = sub.grade !== undefined;
+  const isGraded = sub.grade != null;
   const pct = isGraded ? ((sub.grade! / assignment.totalMarks) * 100) : null;
   const letterGrade = pct !== null
     ? pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B' : pct >= 60 ? 'C' : pct >= 50 ? 'D' : 'F'
@@ -152,8 +152,8 @@ export default function ViewGrade() {
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <h2 className="font-semibold text-gray-800 mb-4">Rubric Breakdown</h2>
           <div className="space-y-4">
-            {assignment.rubric.map(criterion => {
-              const rg = sub.rubricGrades?.find(r => r.criterionId === criterion.id);
+            {assignment.rubric.map((criterion: any) => {
+              const rg = sub.rubricGrades?.find((r: any) => r.criterionId === criterion.id);
               const marks = rg?.marks ?? 0;
               const pctCrit = (marks / criterion.maxMarks) * 100;
 

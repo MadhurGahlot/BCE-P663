@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 
 class AssignmentCreate(BaseModel):
@@ -8,6 +9,14 @@ class AssignmentCreate(BaseModel):
     department: str
     deadline: datetime
     total_marks: int
+
+
+class AssignmentUpdate(BaseModel):
+    title: Optional[str] = None
+    subject: Optional[str] = None
+    department: Optional[str] = None
+    deadline: Optional[datetime] = None
+    total_marks: Optional[int] = None
 
 
 class AssignmentResponse(BaseModel):

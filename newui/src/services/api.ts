@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5147'; // FastAPI backend port
+const API_BASE_URL = 'http://localhost:8000'; // FastAPI backend port
 
 const api = axios.create({
     baseURL: API_BASE_URL,

@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 export default function AssignmentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { users, addSubmission: addSubmissionGlobal } = useApp();
+  const { users, addSubmission: addSubmissionGlobal, refetchData } = useApp();
 
   const addSubmission = (newSub: any) => {
     addSubmissionGlobal(newSub);
@@ -152,82 +152,254 @@ export default function AssignmentDetail() {
 
   // ⚡ Auto-Grade: uses existing similarity + grading endpoints (frontend-only logic)
   const handleAutoGrade = async () => {
-    if (!confirm('Auto-grade all ungraded submissions based on similarity scores and grading rules?\n\nAlready graded submissions will be skipped.')) return;
-    setAutoGrading(true);
-    try {
-      // 1. Fetch similarity results (which include the penalty "marks" from grading rules)
-      const simRes = await api.get(`/similarity/assignment/${id}`);
-      const pairs = simRes.data;
+  if (
+    !confirm(
+      'Auto-grade all ungraded submissions based on similarity and grading rules?\n\nAlready graded submissions will be skipped.'
+    )
+  ) {
+    return;
+  }
 
-      if (!pairs || pairs.length === 0) {
-        toast.error('No similarity data available. Run a similarity check first.');
-        setAutoGrading(false);
-        return;
-      }
+  setAutoGrading(true);
 
-      // 2. Compute max similarity & worst penalty per submission
-      const maxPenalty: Record<string, { sim: number; penalty: number }> = {};
+  try {
 
-      for (const pair of pairs) {
-        const id1 = pair.submissionid1.toString();
-        const id2 = pair.submissionid2.toString();
-        const sim = pair.similarityscore;
-        const penalty = pair.marks ?? 0;
+    // ======================================
+    // FETCH SIMILARITY RESULTS
+    // ======================================
+    const simRes = await api.get(
+      `/similarity/assignment/${id}`
+    );
 
-        if (!maxPenalty[id1] || sim > maxPenalty[id1].sim) {
-          maxPenalty[id1] = { sim, penalty };
-        }
-        if (!maxPenalty[id2] || sim > maxPenalty[id2].sim) {
-          maxPenalty[id2] = { sim, penalty };
-        }
-      }
+    const pairs = simRes.data;
 
-      // 3. Grade each ungraded submission via PUT /grading/{sub_id}
-      let gradedCount = 0;
-      let skippedCount = 0;
-      const totalMarks = assignment.totalMarks ?? 100;
+    if (!pairs || pairs.length === 0) {
 
-      for (const sub of submissions) {
-        // Skip already-graded submissions
-        if (sub.grade !== undefined && sub.grade !== null) {
-          skippedCount++;
-          continue;
-        }
+      toast.error(
+        'No similarity data available.'
+      );
 
-        const info = maxPenalty[sub.id];
-        const penalty = info?.penalty ?? 0;
-        const sim = info?.sim ?? 0;
-        const grade = Math.max(0, totalMarks - penalty);
-
-        let feedback = '';
-        if (sim < 20) {
-          feedback = `Auto-graded: Low similarity (${sim.toFixed(1)}%). Penalty: -${penalty} marks.`;
-        } else if (sim < 60) {
-          feedback = `Auto-graded: Moderate similarity (${sim.toFixed(1)}%). Penalty: -${penalty} marks.`;
-        } else {
-          feedback = `Auto-graded: High similarity (${sim.toFixed(1)}%). Penalty: -${penalty} marks.`;
-        }
-
-        try {
-          await api.put(`/grading/${sub.id}`, { grade, feedback });
-          gradedCount++;
-        } catch (err) {
-          console.error(`Failed to grade submission ${sub.id}`, err);
-        }
-      }
-
-      toast.success(`Auto-graded ${gradedCount} submissions. Skipped ${skippedCount} already graded.`);
-
-      // 4. Refresh data to show updated grades
-      setLoading(true);
-      await fetchData();
-    } catch (err: any) {
-      const detail = err.response?.data?.detail || 'Failed to auto-grade. Make sure grading rules are set and similarity has been run.';
-      toast.error(detail);
-    } finally {
       setAutoGrading(false);
+
+      return;
     }
-  };
+
+    // ======================================
+    // STORE MAX SIMILARITY
+    // ======================================
+    const maxSimilarity: Record<
+      string,
+      number
+    > = {};
+
+    for (const pair of pairs) {
+
+      const id1 =
+        pair.submissionid1.toString();
+
+      const id2 =
+        pair.submissionid2.toString();
+
+      let sim =
+        Number(
+          pair.similarityscore ?? 0
+        );
+
+      // Convert decimal to %
+      if (sim <= 1) {
+        sim = sim * 100;
+      }
+
+      if (
+        !maxSimilarity[id1]
+        ||
+        sim > maxSimilarity[id1]
+      ) {
+
+        maxSimilarity[id1] = sim;
+      }
+
+      if (
+        !maxSimilarity[id2]
+        ||
+        sim > maxSimilarity[id2]
+      ) {
+
+        maxSimilarity[id2] = sim;
+      }
+    }
+
+    // ======================================
+    // ASSIGNMENT TOTAL MARKS
+    // ======================================
+    const totalMarks =
+      assignment.totalMarks ?? 100;
+
+    let gradedCount = 0;
+    let skippedCount = 0;
+
+    // ======================================
+    // AUTO GRADE
+    // ======================================
+    for (const sub of submissions) {
+
+      // Skip already graded
+      if (
+        sub.grade !== undefined
+        &&
+        sub.grade !== null
+      ) {
+
+        skippedCount++;
+        continue;
+      }
+
+      const sim =
+        maxSimilarity[sub.id] ?? 0;
+
+      // ======================================
+      // DEFAULT DEDUCTIONS
+      // ======================================
+      let deduction = 0;
+
+      // ======================================
+      // USE TEACHER RULES
+      // ======================================
+      if (gradingRule) {
+
+        if (sim >= gradingRule.high) {
+
+          deduction =
+            gradingRule.marks_high ?? 0;
+
+        }
+        else if (
+          sim >= gradingRule.low
+        ) {
+
+          deduction =
+            gradingRule.marks_medium ?? 0;
+
+        }
+        else {
+
+          deduction =
+            gradingRule.marks_low ?? 0;
+        }
+      }
+
+      // ======================================
+      // CALCULATE FINAL GRADE
+      // ======================================
+      let grade =
+        totalMarks - deduction;
+
+      // Prevent negative grades
+      if (grade < 0) {
+        grade = 0;
+      }
+
+      // Prevent exceeding total marks
+      if (grade > totalMarks) {
+        grade = totalMarks;
+      }
+
+      // Round
+      grade = Math.round(grade);
+
+      // ======================================
+      // FEEDBACK
+      // ======================================
+      let feedback = '';
+
+      if (sim < 20) {
+
+        feedback =
+          `Low similarity (${sim.toFixed(1)}%). Excellent originality.`;
+
+      }
+      else if (sim < 40) {
+
+        feedback =
+          `Moderate similarity (${sim.toFixed(1)}%). Minor deduction applied.`;
+
+      }
+      else if (sim < 60) {
+
+        feedback =
+          `Elevated similarity (${sim.toFixed(1)}%). Moderate deduction applied.`;
+
+      }
+      else if (sim < 80) {
+
+        feedback =
+          `High similarity (${sim.toFixed(1)}%). Significant deduction applied.`;
+
+      }
+      else {
+
+        feedback =
+          `Very high similarity (${sim.toFixed(1)}%). Heavy deduction applied.`;
+      }
+
+      // ======================================
+      // SAVE GRADE
+      // ======================================
+      try {
+
+        console.log(
+          'Sending grade:',
+          grade
+        );
+
+        await api.put(
+          `/grading/${sub.id}`,
+          {
+            grade,
+            feedback,
+          }
+        );
+
+        gradedCount++;
+
+      } catch (err) {
+
+        console.error(
+          `Failed to grade submission ${sub.id}`,
+          err
+        );
+      }
+    }
+
+    toast.success(
+      `Auto-graded ${gradedCount} submissions. Skipped ${skippedCount} already graded.`
+    );
+
+    // ======================================
+    // REFRESH DATA
+    // ======================================
+    setLoading(true);
+
+    await fetchData();
+
+    await refetchData();
+
+  } catch (err: any) {
+
+    console.error(err);
+
+    const detail =
+      err.response?.data?.detail
+      ||
+      'Failed to auto-grade submissions.';
+
+    toast.error(detail);
+
+  } finally {
+
+    setAutoGrading(false);
+  }
+};
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -565,15 +737,15 @@ export default function AssignmentDetail() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input type="text" value={editData.title || ''} onChange={e => setEditData({...editData, title: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
+                <input type="text" value={editData.title || ''} onChange={e => setEditData({ ...editData, title: e.target.value })} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Total Marks</label>
-                <input type="number" value={editData.total_marks || ''} onChange={e => setEditData({...editData, total_marks: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
+                <input type="number" value={editData.total_marks || ''} onChange={e => setEditData({ ...editData, total_marks: Number(e.target.value) })} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
-                <input type="datetime-local" value={editData.deadline || ''} onChange={e => setEditData({...editData, deadline: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
+                <input type="datetime-local" value={editData.deadline || ''} onChange={e => setEditData({ ...editData, deadline: e.target.value })} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-2">
@@ -593,24 +765,24 @@ export default function AssignmentDetail() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Low % (e.g. 20)</label>
-                  <input type="number" value={rulesData.low} onChange={e => setRulesData({...rulesData, low: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" required />
+                  <input type="number" value={rulesData.low} onChange={e => setRulesData({ ...rulesData, low: Number(e.target.value) })} className="w-full px-3 py-2 border rounded-lg" required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">High % (e.g. 60)</label>
-                  <input type="number" value={rulesData.high} onChange={e => setRulesData({...rulesData, high: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" required />
+                  <input type="number" value={rulesData.high} onChange={e => setRulesData({ ...rulesData, high: Number(e.target.value) })} className="w-full px-3 py-2 border rounded-lg" required />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Penalty for {`<`} Low % (Marks Deducted)</label>
-                <input type="number" value={rulesData.marks_low} onChange={e => setRulesData({...rulesData, marks_low: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" required />
+                <input type="number" value={rulesData.marks_low} onChange={e => setRulesData({ ...rulesData, marks_low: Number(e.target.value) })} className="w-full px-3 py-2 border rounded-lg" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Penalty for Low-High % (Marks Deducted)</label>
-                <input type="number" value={rulesData.marks_medium} onChange={e => setRulesData({...rulesData, marks_medium: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" required />
+                <input type="number" value={rulesData.marks_medium} onChange={e => setRulesData({ ...rulesData, marks_medium: Number(e.target.value) })} className="w-full px-3 py-2 border rounded-lg" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Penalty for {`>`} High % (Marks Deducted)</label>
-                <input type="number" value={rulesData.marks_high} onChange={e => setRulesData({...rulesData, marks_high: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" required />
+                <input type="number" value={rulesData.marks_high} onChange={e => setRulesData({ ...rulesData, marks_high: Number(e.target.value) })} className="w-full px-3 py-2 border rounded-lg" required />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-2">

@@ -61,3 +61,4 @@ backend/testing/temp_*.pdf
 *.pdf
 .zip
 *.zip
+.txt
