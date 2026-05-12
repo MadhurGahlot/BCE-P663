@@ -11,7 +11,10 @@ from fastapi import (
     status,
 )
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import (
+    Session,
+    joinedload
+)
 
 from app.database import get_db
 from app.models.assignments import Assignment
@@ -183,9 +186,6 @@ def process_pdf_with_sarvam(
             api_subscription_key=API_KEY
         )
 
-        # ======================================
-        # LIMIT PDF TO FIRST 5 PAGES
-        # ======================================
         def get_first_n_pages(
             pdf_path,
             output_path,
@@ -220,9 +220,6 @@ def process_pdf_with_sarvam(
 
         upload_path = file_path
 
-        # ======================================
-        # ONLY TRIM PDF FILES
-        # ======================================
         if file_path.lower().endswith(".pdf"):
 
             trimmed_pdf = file_path.replace(
@@ -238,9 +235,6 @@ def process_pdf_with_sarvam(
 
             upload_path = trimmed_pdf
 
-        # ======================================
-        # CREATE SARVAM JOB
-        # ======================================
         job = client.document_intelligence.create_job(
             language="en-IN",
             output_format="md"
@@ -256,7 +250,6 @@ def process_pdf_with_sarvam(
             job.wait_until_complete()
         )
 
-        # Delete temp PDF
         if (
             file_path.lower().endswith(".pdf")
             and os.path.exists(upload_path)
@@ -274,9 +267,6 @@ def process_pdf_with_sarvam(
 
             return ""
 
-        # ======================================
-        # DOWNLOAD OUTPUT ZIP
-        # ======================================
         with tempfile.NamedTemporaryFile(
             suffix=".zip",
             delete=False
@@ -290,9 +280,6 @@ def process_pdf_with_sarvam(
             tmp_zip_path
         )
 
-        # ======================================
-        # EXTRACT TEXT FROM ZIP
-        # ======================================
         text_parts = []
 
         with zipfile.ZipFile(
@@ -397,9 +384,6 @@ def upload_submission(
 
     student_id = current_user.id
 
-    # ======================================
-    # CHECK ASSIGNMENT EXISTS
-    # ======================================
     assignment = (
         db.query(Assignment)
         .filter(
@@ -415,16 +399,10 @@ def upload_submission(
             detail="Assignment not found"
         )
 
-    # ======================================
-    # SAVE FILE
-    # ======================================
     file_path = save_submission_file(
         file
     )
 
-    # ======================================
-    # TRY LOCAL EXTRACTION FIRST
-    # ======================================
     print(
         "Trying local extraction..."
     )
@@ -433,9 +411,6 @@ def upload_submission(
         file_path
     )
 
-    # ======================================
-    # USE SARVAM IF LOCAL FAILS
-    # ======================================
     if (
         not ocr_text
         or
@@ -460,9 +435,6 @@ def upload_submission(
             "Local extraction successful."
         )
 
-    # ======================================
-    # SAVE SUBMISSION
-    # ======================================
     new_submission = Submission(
         assignment_id=assignment_id,
         student_id=student_id,
@@ -476,9 +448,6 @@ def upload_submission(
 
     db.refresh(new_submission)
 
-    # ======================================
-    # COMPARE WITH OTHER SUBMISSIONS
-    # ======================================
     submissions = (
         db.query(Submission)
         .filter(
@@ -573,11 +542,11 @@ def get_submissions_for_assignment(
     )
 ):
 
-    # Teacher
     if current_user.role == "teacher":
 
         return (
             db.query(Submission)
+            .options(joinedload(Submission.student))
             .join(Assignment)
             .filter(
                 Submission.assignment_id
@@ -589,7 +558,6 @@ def get_submissions_for_assignment(
             .all()
         )
 
-    # Student
     return (
         db.query(Submission)
         .filter(
@@ -614,11 +582,11 @@ def get_all_submissions(
     )
 ):
 
-    # Teacher
     if current_user.role == "teacher":
 
         return (
             db.query(Submission)
+            .options(joinedload(Submission.student))
             .join(Assignment)
             .filter(
                 Assignment.created_by
@@ -626,7 +594,7 @@ def get_all_submissions(
             )
             .all()
         )
-    # Student
+
     return (
         db.query(Submission)
         .filter(
@@ -635,6 +603,8 @@ def get_all_submissions(
         )
         .all()
     )
+
+
 # ==========================================
 # STUDENT HISTORY
 # ==========================================
@@ -647,7 +617,6 @@ def get_student_history(
     ),
 ):
 
-    # Teacher access
     if current_user.role == "teacher":
 
         submissions = (
@@ -659,7 +628,6 @@ def get_student_history(
             .all()
         )
 
-    # Student own history
     elif str(current_user.id) == str(student_id):
 
         submissions = (
@@ -705,21 +673,14 @@ def get_student_history(
         )
 
         results.append({
-            "assignment_id":
-                sub.assignment_id,
-
-            "grade":
-                sub.grade,
-
-            "similarity":
-                max_sim
-                if max_sim is not None
-                else 0,
-
-            "submitted_at":
-                sub.created_at.isoformat()
-                if sub.created_at
-                else None,
+            "id": sub.id,
+            "assignment_id": sub.assignment_id,
+            "student_id": sub.student_id,
+            "file_path": sub.file_path,
+            "ocr_text": sub.ocr_text,
+            "grade": sub.grade,
+            "max_similarity": max_sim if max_sim is not None else 0,
+            "created_at": sub.created_at.isoformat() if sub.created_at else None,
         })
 
     return results
