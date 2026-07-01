@@ -69,7 +69,4 @@ def root():
         "contact" : "236301126@gkv.ac.in"
     }
 
-@app.get("/add/{val}")
-def items(val: int , q : str | None = None):
-    return {"NOofitmeadded": val , "q ": q}
 
