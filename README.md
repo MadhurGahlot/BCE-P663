@@ -4,6 +4,10 @@ A FastAPI-based backend system for detecting similarity between assignments, inc
 
 ---
 
+
+## now to Activate the project we have to run thr run.pr file only
+
+
 ## 🛠 Tech Stack
 
 * FastAPI

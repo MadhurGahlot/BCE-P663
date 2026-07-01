@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import similarity
 from app.database import engine, Base
+from datetime import datetime
 
 
 # ✅ IMPORT ALL MODELS (VERY IMPORTANT)
@@ -43,7 +44,7 @@ app.add_middleware(
 )
 
 
-# ✅ CREATE TABLES ON STARTUP (BEST PRACTICE)
+
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
@@ -64,7 +65,7 @@ def root():
     return {
         "message": "BCE-P663 Backend Running",
         "status": "OK",
-        "date": "21-01-2026",
+        "date": datetime.now(),
         "contact" : "236301126@gkv.ac.in"
     }
 
