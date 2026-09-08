@@ -132,10 +132,56 @@ def extract_text_locally(
         # TXT FILE
         if file_path.lower().endswith(".txt"):
 
+            # Try multiple encodings —
+            # Windows files often use cp1252
+            # or utf-16 instead of utf-8
+            encodings = [
+                "utf-8",
+                "utf-8-sig",
+                "utf-16",
+                "cp1252",
+                "latin-1",
+            ]
+
+            for enc in encodings:
+
+                try:
+
+                    with open(
+                        file_path,
+                        "r",
+                        encoding=enc
+                    ) as f:
+
+                        content = f.read()
+
+                    if content:
+
+                        print(
+                            f"TXT extracted with "
+                            f"encoding: {enc}"
+                        )
+
+                        return content
+
+                except (
+                    UnicodeDecodeError,
+                    UnicodeError,
+                ):
+                    continue
+
+            # Last resort — read as
+            # binary and decode loosely
+            print(
+                "All encodings failed, "
+                "using errors='replace'"
+            )
+
             with open(
                 file_path,
                 "r",
-                encoding="utf-8"
+                encoding="utf-8",
+                errors="replace"
             ) as f:
 
                 return f.read()
@@ -165,6 +211,9 @@ def extract_text_locally(
         print(
             f"Local extraction failed: {e}"
         )
+
+        import traceback
+        traceback.print_exc()
 
         return ""
 
@@ -411,7 +460,32 @@ def upload_submission(
         file_path
     )
 
-    if (
+    # For .txt files, trust the local
+    # read — any content length is valid.
+    # The 30-char threshold only applies
+    # to PDF/image OCR where short output
+    # means extraction likely failed.
+    is_txt = file_path.lower().endswith(
+        ".txt"
+    )
+
+    if is_txt:
+
+        if ocr_text:
+
+            print(
+                "Local extraction "
+                "successful."
+            )
+
+        else:
+
+            print(
+                "WARNING: TXT file is "
+                "empty."
+            )
+
+    elif (
         not ocr_text
         or
         len(
@@ -420,6 +494,7 @@ def upload_submission(
     ):
 
         print(
+            "Local extraction failed. "
             "Using Sarvam OCR..."
         )
 
@@ -684,3 +759,187 @@ def get_student_history(
         })
 
     return results
+
+
+# ==========================================
+# RE-EXTRACT TEXT FOR OLD SUBMISSIONS
+# ==========================================
+@router.patch("/re-extract/{submission_id}")
+def re_extract_text(
+    submission_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Re-extract text for a submission
+    that has empty/missing ocr_text.
+    Useful for fixing old submissions
+    that failed extraction.
+    """
+
+    submission = (
+        db.query(Submission)
+        .filter(
+            Submission.id == submission_id
+        )
+        .first()
+    )
+
+    if not submission:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Submission not found"
+        )
+
+    file_path = submission.file_path
+
+    if not os.path.exists(file_path):
+
+        raise HTTPException(
+            status_code=404,
+            detail="File not found on disk"
+        )
+
+    # Try local extraction first
+    ocr_text = extract_text_locally(
+        file_path
+    )
+
+    # For non-txt files, fallback
+    # to Sarvam if local failed
+    is_txt = file_path.lower().endswith(
+        ".txt"
+    )
+
+    if (
+        not is_txt
+        and (
+            not ocr_text
+            or len(ocr_text.strip()) < 30
+        )
+    ):
+
+        ocr_text = (
+            process_pdf_with_sarvam(
+                file_path
+            )
+        )
+
+    # Update the submission
+    submission.ocr_text = ocr_text
+    db.commit()
+    db.refresh(submission)
+
+    return {
+        "message":
+            "Text re-extracted successfully",
+
+        "submission_id":
+            submission.id,
+
+        "ocr_text":
+            ocr_text,
+
+        "ocr_text_length":
+            len(ocr_text) if ocr_text else 0,
+    }
+
+
+# ==========================================
+# RE-EXTRACT ALL EMPTY SUBMISSIONS
+# ==========================================
+@router.patch("/re-extract-all/assignment/{assignment_id}")
+def re_extract_all(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Re-extract text for ALL submissions
+    in an assignment that have empty
+    ocr_text.
+    """
+
+    submissions = (
+        db.query(Submission)
+        .filter(
+            Submission.assignment_id
+            == assignment_id,
+
+            (
+                Submission.ocr_text == None
+            ) | (
+                Submission.ocr_text == ""
+            )
+        )
+        .all()
+    )
+
+    results = []
+
+    for sub in submissions:
+
+        if (
+            not sub.file_path
+            or not os.path.exists(
+                sub.file_path
+            )
+        ):
+
+            results.append({
+                "submission_id": sub.id,
+                "status": "file_missing",
+            })
+
+            continue
+
+        ocr_text = extract_text_locally(
+            sub.file_path
+        )
+
+        is_txt = (
+            sub.file_path
+            .lower()
+            .endswith(".txt")
+        )
+
+        if (
+            not is_txt
+            and (
+                not ocr_text
+                or len(
+                    ocr_text.strip()
+                ) < 30
+            )
+        ):
+
+            ocr_text = (
+                process_pdf_with_sarvam(
+                    sub.file_path
+                )
+            )
+
+        sub.ocr_text = ocr_text
+
+        results.append({
+            "submission_id": sub.id,
+            "status": "success",
+            "ocr_text_length":
+                len(ocr_text)
+                if ocr_text else 0,
+        })
+
+    db.commit()
+
+    return {
+        "message":
+            f"Re-extracted {len(results)} "
+            f"submissions",
+
+        "results": results,
+    }
