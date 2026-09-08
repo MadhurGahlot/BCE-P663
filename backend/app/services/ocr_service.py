@@ -27,6 +27,10 @@ def call_sarvam_api(pdf_path: str) -> str:
     """
     Placeholder for Sarvam AI Document OCR API.
     """
+    USE_SARVAM = os.getenv("use_sarvam","false").lower() =="true"
+    if not USE_SARVAM:
+        print("🚫 Sarvam is disabled. Using local TrOCR.")
+        return extract_text_with_ocr(pdf_path)
     print("☁️ Sending to Sarvam AI API for handwriting extraction...")
     sarvam_api_key = os.getenv("SARVAM_API_KEY")
     if not sarvam_api_key:

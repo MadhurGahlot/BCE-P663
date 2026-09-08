@@ -1,0 +1,10 @@
+"Model Name","Total Quantity","Total Cost (INR)"
+"sarvam-vision","28","42.00"
+
+"Date","Spend (INR)","Requests"
+"06 Apr 2026","3.00","1"
+"11 May 2026","39.00","4"
+
+"Model Name","Date","Usage","Cost (INR)"
+"sarvam-vision","06 Apr 2026","2","3.00"
+"sarvam-vision","11 May 2026","26","39.00"

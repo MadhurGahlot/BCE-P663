@@ -1,6 +1,8 @@
 # Environment variables
 .env
 *.env
+.mintenv
+*.mintenv
 
 # Python
 __pycache__/
@@ -13,6 +15,8 @@ __pycache__/
 venv/
 env/
 ENV/
+mintenv/
+
 
 # Node / Frontend
 node_modules/
@@ -62,3 +66,4 @@ backend/testing/temp_*.pdf
 .zip
 *.zip
 .txt
+*.txt

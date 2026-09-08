@@ -224,7 +224,7 @@ export default function Grading() {
       setSubmissions(newSubs);
 
       setSaved(true);
-      toast.success(`Saved grade ${computedGrade}/${assignment.totalMarks} for ${users.find(u => u.id === sub.studentId)?.name || 'Student'}`);
+      toast.success(`Saved grade ${computedGrade}/${assignment.totalMarks} for ${users.find(u => u.id?.toString() === sub.studentId)?.name || 'Student'}`);
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       toast.error("Failed to save grade");
@@ -238,7 +238,7 @@ export default function Grading() {
     }
   };
 
-  const getStudentName = (studentId: string) => users.find(u => u.id === studentId)?.name ?? studentId;
+  const getStudentName = (studentId: string) => users.find(u => u.id?.toString() === studentId)?.name ?? studentId;
   const simScore = simResult?.pairs.find((p: any) => p.submission1Id === sub?.id || p.submission2Id === sub?.id);
   const maxSim = sub?.maxSimilarity;
 
@@ -283,7 +283,7 @@ export default function Grading() {
           </div>
           <div className="overflow-auto max-h-[calc(100vh-300px)]">
             {submissions.map((s, i) => {
-              const student = users.find(u => u.id === s.studentId);
+              const student = users.find(u => u.id?.toString() === s.studentId);
               return (
                 <button
                   key={s.id}
@@ -320,7 +320,7 @@ export default function Grading() {
                 </div>
                 <div>
                   <div className="font-semibold text-gray-800">{getStudentName(sub.studentId)}</div>
-                  <div className="text-sm text-gray-500">{users.find(u => u.id === sub.studentId)?.email}</div>
+                  <div className="text-sm text-gray-500">{users.find(u => u.id?.toString() === sub.studentId)?.email}</div>
                   <div className="text-xs text-gray-400 mt-0.5">
                     Submitted: {new Date(sub.submittedAt).toLocaleString()} • {sub.fileName}
                   </div>
