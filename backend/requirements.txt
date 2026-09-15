@@ -20,3 +20,5 @@ pillow
 transformers
 torch
 sentence-transformers
+sarvamai
+pypdf2
