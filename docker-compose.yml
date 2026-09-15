@@ -32,7 +32,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./newui
       dockerfile: Dockerfile
     container_name: bce_frontend
     restart: always
