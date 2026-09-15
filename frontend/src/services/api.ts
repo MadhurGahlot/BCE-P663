@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use environment variable if provided, otherwise default to local development port
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://api.gradebook.antideploy.com' : 'http://localhost:8000');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://gradebook.antideploy.com' : 'http://localhost:8000');
 
 const api = axios.create({
     baseURL: API_BASE_URL,
